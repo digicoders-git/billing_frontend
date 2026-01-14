@@ -1,11 +1,9 @@
-import React, { useState,  useMemo, useEffect, useRef } from 'react';
+import React, { useState,  useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
   Save, Plus, Trash2, User, Calendar, 
-  Hash, FileText, Settings, Keyboard, 
-  ArrowLeft, Search, ScanBarcode, X,
-  ChevronDown, Box
+  Hash, ArrowLeft, Search, X, Receipt
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
@@ -43,11 +41,16 @@ const AddInvoice = () => {
     items: [
       { id: Date.now(), name: '', itemId: null, hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, tax: 0, amount: 0 }
     ],
+    // GST Fields
+    gstEnabled: false,
+    gstRate: 18,
+    taxType: 'Exclusive', // 'Inclusive' or 'Exclusive'
+    stateOfSupply: '',
     notes: '',
     terms: '1. Goods once sold will not be taken back or exchanged\n2. All disputes are subject to [SIDDHARTH NAGAR] jurisdiction only.',
     additionalCharges: 0,
     overallDiscount: 0,
-    overallDiscountType: 'percentage', // 'fixed' or 'percentage'
+    overallDiscountType: 'percentage',
     autoRoundOff: true,
     amountReceived: 0,
     paymentMethod: 'Cash'
@@ -56,7 +59,6 @@ const AddInvoice = () => {
   // Generate Invoice Number on Mount
   useEffect(() => {
       const generateInvoiceNo = async () => {
-          // Simple client-side generation for now, ideally fetch next sequence from backend
           const randomNum = Math.floor(1000 + Math.random() * 9000);
           setFormData(prev => ({ ...prev, invoiceNo: `INV-${new Date().getFullYear()}-${randomNum}` }));
       };
@@ -131,24 +133,73 @@ const AddInvoice = () => {
     }
   };
 
-  // Grand Totals Calculation
+  // Grand Totals Calculation with GST
   const totals = useMemo(() => {
     const subtotal = formData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const taxableAmount = subtotal + (parseFloat(formData.additionalCharges) || 0);
     
     let discountVal = 0;
     if (formData.overallDiscountType === 'percentage') {
-      discountVal = (taxableAmount * (parseFloat(formData.overallDiscount) || 0)) / 100;
+      discountVal = (subtotal * (parseFloat(formData.overallDiscount) || 0)) / 100;
     } else {
       discountVal = parseFloat(formData.overallDiscount) || 0;
     }
 
-    const totalBeforeRound = taxableAmount - discountVal;
+    const afterDiscount = subtotal - discountVal;
+    const withCharges = afterDiscount + (parseFloat(formData.additionalCharges) || 0);
+
+    let taxableAmount = withCharges;
+    let gstAmount = 0;
+    let cgst = 0;
+    let sgst = 0;
+    let igst = 0;
+
+    if (formData.gstEnabled) {
+      const gstRate = parseFloat(formData.gstRate) || 0;
+      
+      if (formData.taxType === 'Inclusive') {
+        // GST is included in the price
+        taxableAmount = withCharges / (1 + gstRate / 100);
+        gstAmount = withCharges - taxableAmount;
+      } else {
+        // GST is added on top
+        gstAmount = (withCharges * gstRate) / 100;
+      }
+
+      // Determine CGST/SGST vs IGST based on state
+      // Assuming company state is Uttar Pradesh
+      const companyState = 'Uttar Pradesh';
+      const partyState = formData.party?.placeOfSupply || formData.stateOfSupply || '';
+      
+      if (partyState && partyState.toLowerCase() === companyState.toLowerCase()) {
+        // Intra-state: CGST + SGST
+        cgst = gstAmount / 2;
+        sgst = gstAmount / 2;
+        igst = 0;
+      } else {
+        // Inter-state: IGST
+        igst = gstAmount;
+        cgst = 0;
+        sgst = 0;
+      }
+    }
+
+    const totalBeforeRound = formData.taxType === 'Inclusive' ? withCharges : (withCharges + gstAmount);
     const roundedTotal = formData.autoRoundOff ? Math.round(totalBeforeRound) : totalBeforeRound;
     const roundOffDiff = (roundedTotal - totalBeforeRound).toFixed(2);
     const balance = roundedTotal - (parseFloat(formData.amountReceived) || 0);
 
-    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, balance };
+    return { 
+      subtotal, 
+      discountVal, 
+      taxableAmount, 
+      gstAmount,
+      cgst,
+      sgst,
+      igst,
+      roundedTotal, 
+      roundOffDiff, 
+      balance 
+    };
   }, [formData]);
 
   const handleSubmit = async (e) => {
@@ -161,11 +212,19 @@ const AddInvoice = () => {
     setLoading(true);
     try {
         const payload = {
-            ...formData,
+            invoiceNo: formData.invoiceNo,
+            date: formData.date,
+            paymentTerms: formData.paymentTerms,
             party: formData.party._id, 
             partyName: formData.party.name,
             billingAddress: formData.party.billingAddress,
-            // Map items to keep backend references
+            stateOfSupply: formData.party.placeOfSupply || formData.stateOfSupply,
+            
+            // GST Fields - Explicitly included
+            gstEnabled: formData.gstEnabled,
+            gstRate: parseFloat(formData.gstRate) || 0,
+            taxType: formData.taxType,
+            
             items: formData.items.map(item => ({
                 itemId: item.itemId,
                 name: item.name,
@@ -177,15 +236,34 @@ const AddInvoice = () => {
                 tax: parseFloat(item.tax),
                 amount: parseFloat(item.amount)
             })),
+            
+            // Calculated Totals
             subtotal: totals.subtotal,
             taxableAmount: totals.taxableAmount,
+            gstAmount: totals.gstAmount,
+            cgst: totals.cgst,
+            sgst: totals.sgst,
+            igst: totals.igst,
             totalAmount: totals.roundedTotal,
             roundOffDiff: parseFloat(totals.roundOffDiff),
+            
+            // Payment Info
+            additionalCharges: parseFloat(formData.additionalCharges) || 0,
+            overallDiscount: parseFloat(formData.overallDiscount) || 0,
+            overallDiscountType: formData.overallDiscountType,
+            autoRoundOff: formData.autoRoundOff,
+            amountReceived: parseFloat(formData.amountReceived) || 0,
             balanceAmount: totals.balance,
+            paymentMethod: formData.paymentMethod,
             status: totals.balance <= 0 ? 'Paid' : (totals.balance < totals.roundedTotal ? 'Partial' : 'Unpaid'),
-            dueDate: dueDate
+            dueDate: dueDate,
+            
+            // Notes
+            notes: formData.notes,
+            terms: formData.terms
         };
 
+        console.log('Invoice Payload:', payload); // Debug log
         await api.post('/invoices', payload);
         Swal.fire({
             title: 'Success!',
@@ -261,7 +339,7 @@ const AddInvoice = () => {
                               key={party._id} 
                               className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-0 flex justify-between items-center group"
                               onClick={() => {
-                                setFormData(prev => ({ ...prev, party }));
+                                setFormData(prev => ({ ...prev, party, stateOfSupply: party.placeOfSupply || '' }));
                                 setShowPartyDropdown(false);
                                 setSearchParty('');
                               }}
@@ -292,11 +370,82 @@ const AddInvoice = () => {
                         <button onClick={() => setFormData(prev => ({ ...prev, party: null }))} className="text-red-500 text-[10px] sm:text-xs font-bold hover:underline ml-auto sm:ml-4 bg-red-50 px-3 py-1 rounded-lg">CHANGE</button>
                       </div>
                       <div className="pl-[52px]">
-                         <p className="text-[11px] text-gray-500 font-medium line-clamp-2 w-3/4">{formData.part?.billingAddress || 'No billing address provided'}</p>
+                         <p className="text-[11px] text-gray-500 font-medium line-clamp-2 w-3/4">{formData.party.billingAddress || 'No billing address provided'}</p>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
                        <span className="text-[9px] sm:text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-widest border border-blue-100">{formData.party.placeOfSupply || 'State N/A'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* GST Toggle Section */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                      <Receipt size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-gray-900 uppercase">GST Billing</h3>
+                      <p className="text-[10px] text-gray-600 font-medium">Enable GST calculation for this invoice</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.gstEnabled}
+                        onChange={(e) => setFormData({...formData, gstEnabled: e.target.checked})}
+                      />
+                      <div className="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                      <span className="ml-3 text-sm font-bold text-gray-700">{formData.gstEnabled ? 'ON' : 'OFF'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* GST Options - Show when enabled */}
+                {formData.gstEnabled && (
+                  <div className="mt-4 pt-4 border-t border-blue-200 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-wider">GST Rate (%)</label>
+                      <select 
+                        className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={formData.gstRate}
+                        onChange={(e) => setFormData({...formData, gstRate: parseFloat(e.target.value)})}
+                      >
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="18">18%</option>
+                        <option value="28">28%</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-wider">Tax Type</label>
+                      <select 
+                        className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={formData.taxType}
+                        onChange={(e) => setFormData({...formData, taxType: e.target.value})}
+                      >
+                        <option value="Exclusive">Exclusive</option>
+                        <option value="Inclusive">Inclusive</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-600 uppercase tracking-wider">State of Supply</label>
+                      <input 
+                        type="text" 
+                        className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={formData.stateOfSupply}
+                        onChange={(e) => setFormData({...formData, stateOfSupply: e.target.value})}
+                        placeholder="e.g., Uttar Pradesh"
+                      />
                     </div>
                   </div>
                 )}
@@ -324,7 +473,6 @@ const AddInvoice = () => {
                         <tr key={item.id} className="border-b border-gray-50 hover:bg-blue-50/10 transition-colors group">
                           <td className="px-4 py-3 text-center text-xs font-bold text-gray-400">{index + 1}</td>
                           <td className="px-4 py-3 relative">
-                            {/* Item Autocomplete Search */}
                             <input 
                               type="text" 
                               className="w-full bg-transparent border-none outline-none text-sm font-bold text-gray-900 placeholder:text-gray-300"
@@ -333,7 +481,6 @@ const AddInvoice = () => {
                               onChange={(e) => {
                                   setActiveItemSearchIndex(index);
                                   setItemSearchTerm(e.target.value);
-                                  // Also update the row name temporarily so it doesn't vanish
                                   updateItem(item.id, 'name', e.target.value);
                               }}
                               onFocus={() => {
@@ -341,18 +488,16 @@ const AddInvoice = () => {
                                   setItemSearchTerm(item.name);
                               }}
                               onBlur={() => {
-                                  // Small delay to allow click selection
                                   setTimeout(() => setActiveItemSearchIndex(null), 200);
                               }}
                             />
-                            {/* Autocomplete Dropdown */}
                             {activeItemSearchIndex === index && itemSearchTerm && (
                                 <div className="absolute top-10 left-0 w-full min-w-[300px] bg-white border border-gray-200 rounded-lg shadow-xl z-[60] max-h-48 overflow-y-auto">
                                     {allItems.filter(i => i.name.toLowerCase().includes(itemSearchTerm.toLowerCase())).map(i => (
                                         <div 
                                             key={i._id} 
                                             className="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b last:border-0 flex justify-between items-center"
-                                            onMouseDown={() => selectItem(index, i)} // Use onMouseDown to trigger before onBlur
+                                            onMouseDown={() => selectItem(index, i)}
                                         >
                                             <div>
                                                 <div className="font-bold text-sm text-gray-900">{i.name}</div>
@@ -424,7 +569,6 @@ const AddInvoice = () => {
                 <div className="md:hidden divide-y divide-gray-100">
                   {formData.items.map((item, index) => (
                     <div key={item.id} className="p-4 space-y-3 relative">
-                       {/* Mobile search would go here, simplified for now */}
                        <div className="flex justify-between items-start">
                           <input 
                             type="text" 
@@ -583,12 +727,41 @@ const AddInvoice = () => {
                       onChange={(e) => setFormData({...formData, overallDiscount: parseFloat(e.target.value) || 0})}
                     />
                   </div>
+
+                  {/* GST Breakdown */}
+                  {formData.gstEnabled && (
+                    <>
+                      <div className="pt-2 border-t border-dashed border-gray-200">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-gray-500">Taxable Amount</span>
+                          <span className="font-black text-gray-700">₹{totals.taxableAmount.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      {totals.igst > 0 ? (
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-blue-600">IGST ({formData.gstRate}%)</span>
+                          <span className="font-black text-blue-600">₹{totals.igst.toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-green-600">CGST ({formData.gstRate / 2}%)</span>
+                            <span className="font-black text-green-600">₹{totals.cgst.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-bold text-green-600">SGST ({formData.gstRate / 2}%)</span>
+                            <span className="font-black text-green-600">₹{totals.sgst.toFixed(2)}</span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
                    <div className="flex justify-between items-center gap-2 bg-black p-4 rounded-xl text-white shadow-xl shadow-black/10 overflow-hidden relative group cursor-default">
                       <div className="relative z-10 flex-1 min-w-0">
-                        <div className="text-[9px] font-black uppercase opacity-60 tracking-[2px] mb-1">Total Payble</div>
+                        <div className="text-[9px] font-black uppercase opacity-60 tracking-[2px] mb-1">Total Payable</div>
                         <div className="text-xl sm:text-2xl font-black truncate">₹ {totals.roundedTotal.toLocaleString()}</div>
                       </div>
                       <div className="absolute right-[-20px] bottom-[-40px] opacity-10 rotate-12 bg-white rounded-full w-32 h-32 group-hover:scale-110 transition-transform duration-500" />

@@ -293,6 +293,7 @@ const Reports = () => {
       icon: <DollarSign className="text-emerald-500" size={20} />,
       count: data.payments.length,
       items: [
+        { name: "Daybook" },
         { name: "Cash and Bank Report", value: reportData.totalPayments },
         { name: "Payment In Summary" },
         { name: "Payment Out Summary" },
@@ -307,6 +308,7 @@ const Reports = () => {
   };
 
   const reportRoutes = {
+    "Daybook": "/daybook",
     "Profit And Loss Report": "/reports/profit-loss",
     "Sales Summary": "/sales/invoices",
     "Purchase Summary": "/purchases/bills",

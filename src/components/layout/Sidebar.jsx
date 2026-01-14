@@ -14,7 +14,9 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
+  Wallet,
 } from "lucide-react";
+
 import { cn } from "../../lib/utils";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -174,6 +176,7 @@ const Sidebar = () => {
       ],
     },
     { icon: FileText, label: "Reports", href: "/reports" },
+    { icon: Wallet, label: "Expenses", href: "/expenses" },
     { icon: Building2, label: "Branch Management", href: "/branches" },
   ];
 
@@ -195,6 +198,7 @@ const Sidebar = () => {
     "Reports",
     "Staff Attendance & Payroll",
     "Purchases",
+    "Expenses",
     "Branch Management",
   ];
 

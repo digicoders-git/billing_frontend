@@ -63,6 +63,11 @@ import ViewPurchaseOrder from './pages/ViewPurchaseOrder';
 import Reports from './pages/Reports';
 import BalanceSheet from './pages/BalanceSheet';
 import DynamicReport from './pages/DynamicReport';
+import Expenses from './pages/Expenses';
+import AddExpense from './pages/AddExpense';
+import ExpensePDF from './pages/ExpensePDF';
+import Daybook from './pages/Daybook';
+
 
 function App() {
   return (
@@ -373,6 +378,29 @@ function App() {
               </ProtectedRoute>
             } />
 
+            {/* Expenses Module */}
+            <Route path="/expenses" element={
+              <ProtectedRoute>
+                <Expenses />
+              </ProtectedRoute>
+            } />
+            <Route path="/add-expense" element={
+              <ProtectedRoute>
+                <AddExpense />
+              </ProtectedRoute>
+            } />
+            <Route path="/expenses/edit/:id" element={
+              <ProtectedRoute>
+                <AddExpense />
+              </ProtectedRoute>
+            } />
+            <Route path="/expenses/print/:id" element={
+              <ProtectedRoute>
+                <ExpensePDF />
+              </ProtectedRoute>
+            } />
+
+
             {/* Other */}
             <Route path="/profile" element={
               <ProtectedRoute>
@@ -396,6 +424,11 @@ function App() {
             <Route path="/reports" element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/daybook" element={
+              <ProtectedRoute>
+                <Daybook />
               </ProtectedRoute>
             } />
             <Route path="/reports/balance-sheet" element={
