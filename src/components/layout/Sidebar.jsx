@@ -203,7 +203,15 @@ const Sidebar = () => {
   ];
 
   if (isLoggedIn && currentUser && currentUser.permissions) {
-    allowedMenus = currentUser.permissions;
+    // If permissions is an array of objects (Branch structure), extract the module names
+    if (currentUser.permissions.length > 0 && typeof currentUser.permissions[0] === 'object') {
+      allowedMenus = currentUser.permissions.map(p => p.module);
+    } else {
+      // Otherwise assume it's already an array of strings
+      allowedMenus = currentUser.permissions;
+    }
+
+    // Always ensure Reports is allowed if not already present (optional per previous logic)
     if (!allowedMenus.includes("Reports")) {
       allowedMenus = [...allowedMenus, "Reports"];
     }
