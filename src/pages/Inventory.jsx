@@ -13,7 +13,10 @@ import Swal from 'sweetalert2';
 import xlsx from 'json-as-xlsx';
 import api from '../lib/axios';
 
+import useUserPermissions from '../hooks/useUserPermissions';
+
 const Inventory = () => {
+    const { canCreate, canEdit, canDelete } = useUserPermissions('Items');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -340,13 +343,15 @@ const Inventory = () => {
                       </div>
                   )}
               </div>
-              <button 
-                  onClick={handleAddItem}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#000000] text-white rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-[#b4933d] transition-all font-black text-[10px] uppercase tracking-widest"
-              >
-                  <Plus size={16} />
-                  Add Item
-              </button>
+              {canCreate && (
+                  <button 
+                      onClick={handleAddItem}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-[#000000] text-white rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-[#b4933d] transition-all font-black text-[10px] uppercase tracking-widest"
+                  >
+                      <Plus size={16} />
+                      Add Item
+                  </button>
+              )}
           </div>
       </div>
 
@@ -410,12 +415,14 @@ const Inventory = () => {
               >
                   <Download size={16} /> Export
               </button>
-              <button 
-                onClick={() => setShowCategoryModal(true)}
-                className="px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-indigo-600 transition-all shadow-sm"
-              >
-                  Manage Categories
-              </button>
+              {canEdit && (
+                  <button 
+                    onClick={() => setShowCategoryModal(true)}
+                    className="px-5 py-3 bg-white border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-indigo-600 transition-all shadow-sm"
+                  >
+                      Manage Categories
+                  </button>
+              )}
           </div>
       </div>
 
@@ -452,8 +459,8 @@ const Inventory = () => {
                           <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-blue-600 transition-all"><Eye size={16} /></button>
-                                  <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 hover:text-[#000000] transition-all"><Pencil size={16} /></button>
-                                  <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
+                                  {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 hover:text-[#000000] transition-all"><Pencil size={16} /></button>}
+                                  {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16} /></button>}
                               </div>
                           </td>
                       </tr>
@@ -505,8 +512,8 @@ const Inventory = () => {
                       </button>
                       <div className="flex items-center gap-1">
                           <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 bg-gray-50 rounded-xl hover:text-blue-600"><Eye size={18} /></button>
-                          <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 bg-gray-50 rounded-xl hover:text-black"><Pencil size={18} /></button>
-                          <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 bg-gray-50 rounded-xl active:text-red-500"><Trash2 size={18} /></button>
+                          {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 bg-gray-50 rounded-xl hover:text-black"><Pencil size={18} /></button>}
+                          {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 bg-gray-50 rounded-xl active:text-red-500"><Trash2 size={18} /></button>}
                       </div>
                   </div>
               </div>

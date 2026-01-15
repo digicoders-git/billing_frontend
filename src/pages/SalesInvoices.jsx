@@ -9,10 +9,13 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const SalesInvoices = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    
+    const { canCreate, canEdit, canDelete } = useUserPermissions('Sales');
     
     // Read query param for initial filter
     const queryParams = new URLSearchParams(location.search);
@@ -222,12 +225,14 @@ const SalesInvoices = () => {
                     </div>
                     <div className="flex items-center gap-3">
                        
-                        <button 
-                            onClick={() => navigate('/add-invoice')}
-                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-[#000000] text-white rounded-lg text-sm font-black shadow-lg shadow-blue-200 hover:bg-[#4338CA] transition-all whitespace-nowrap uppercase tracking-wider"
-                        >
-                            <Plus size={18} /> <span className="sm:inline">Create Invoice</span>
-                        </button>
+                        {canCreate && (
+                            <button 
+                                onClick={() => navigate('/add-invoice')}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-[#000000] text-white rounded-lg text-sm font-black shadow-lg shadow-blue-200 hover:bg-[#4338CA] transition-all whitespace-nowrap uppercase tracking-wider"
+                            >
+                                <Plus size={18} /> <span className="sm:inline">Create Invoice</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -283,9 +288,11 @@ const SalesInvoices = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="p-1.5 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all">
-                                                    <MoreVertical size={18} />
-                                                </button>
+                                                {(canEdit || canDelete) && (
+                                                    <button className="p-1.5 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all">
+                                                        <MoreVertical size={18} />
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))

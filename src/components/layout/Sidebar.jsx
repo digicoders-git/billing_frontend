@@ -205,7 +205,10 @@ const Sidebar = () => {
   if (isLoggedIn && currentUser && currentUser.permissions) {
     // If permissions is an array of objects (Branch structure), extract the module names
     if (currentUser.permissions.length > 0 && typeof currentUser.permissions[0] === 'object') {
-      allowedMenus = currentUser.permissions.map(p => p.module);
+      // Filter out modules where view is explicitly set to false
+      allowedMenus = currentUser.permissions
+        .filter(p => p.actions?.view !== false)
+        .map(p => p.module);
     } else {
       // Otherwise assume it's already an array of strings
       allowedMenus = currentUser.permissions;
