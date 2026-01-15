@@ -9,9 +9,19 @@ import Swal from 'sweetalert2';
 import api from '../lib/axios';
 
 const AVAILABLE_PERMISSIONS = [
-    'Dashboard', 'Parties', 'Items', 'Sales', 'Purchases', 
-    'Payments', 'Reports', 'Settings', 'Users', 'Branches',
-    'Invoices', 'Quotations', 'Returns', 'Godowns', 'Staff'
+    'Dashboard', 
+    'Cash & Bank', // Was Payments
+    'Parties', 
+    'Items', 
+    'Sales', 
+    'Staff Attendance & Payroll', // Was Staff
+    'Purchases', 
+    'Reports', 
+    'Expenses', // Added
+    'Branch Management', // Was Branches
+    'Settings', 'Users', 
+    // Sub-modules kept for granular permissions if needed later
+    'Invoices', 'Quotations', 'Returns', 'Godowns'
 ];
 
 const CreateBranch = () => {

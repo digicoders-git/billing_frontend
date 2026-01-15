@@ -203,15 +203,22 @@ const Sidebar = () => {
   ];
 
   if (isLoggedIn && currentUser && currentUser.permissions) {
+    // Legacy mapping for mismatched backend names
+    const PERMISSION_MAPPING = {
+      'Payments': 'Cash & Bank',
+      'Staff': 'Staff Attendance & Payroll',
+      'Branches': 'Branch Management'
+    };
+
     // If permissions is an array of objects (Branch structure), extract the module names
     if (currentUser.permissions.length > 0 && typeof currentUser.permissions[0] === 'object') {
       // Filter out modules where view is explicitly set to false
       allowedMenus = currentUser.permissions
         .filter(p => p.actions?.view !== false)
-        .map(p => p.module);
+        .map(p => PERMISSION_MAPPING[p.module] || p.module);
     } else {
       // Otherwise assume it's already an array of strings
-      allowedMenus = currentUser.permissions;
+      allowedMenus = currentUser.permissions.map(p => PERMISSION_MAPPING[p] || p);
     }
 
     // Always ensure Reports is allowed if not already present (optional per previous logic)
