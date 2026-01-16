@@ -80,7 +80,7 @@ const Invoices = () => {
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = invoice.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          invoice.partyName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (invoice.status || '').toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
@@ -137,8 +137,9 @@ const Invoices = () => {
               >
                 <option value="all">All Status</option>
                 <option value="draft">Draft</option>
-                <option value="partially_paid">Partially Paid</option>
+                <option value="partial">Partially Paid</option>
                 <option value="paid">Paid</option>
+                <option value="unpaid">Unpaid</option>
               </select>
             </div>
           </div>

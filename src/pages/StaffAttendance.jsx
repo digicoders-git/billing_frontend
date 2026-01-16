@@ -457,8 +457,11 @@ const StaffAttendance = () => {
                             <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                             <h2 className="text-2xl font-bold relative z-10">{selectedStaff.name}</h2>
                             <p className="text-indigo-100 text-sm relative z-10">Marking attendance for today</p>
-                            <button onClick={() => setShowAttendanceModal(false)} className="absolute top-4 right-4 text-indigo-200 hover:text-white transition-colors">
-                                <X size={24} />
+                            <button 
+                                onClick={() => setShowAttendanceModal(false)} 
+                                className="absolute top-4 right-4 z-20 p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white hover:text-white transition-all border border-white/20 hover:border-white/40"
+                            >
+                                <X size={20} />
                             </button>
                         </div>
                         

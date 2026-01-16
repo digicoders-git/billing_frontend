@@ -25,6 +25,7 @@ const AddExpense = () => {
         category: '',
         paymentMode: 'Cash',
         description: '',
+        accountId: '', // New field
         
         // GST Advanced Fields
         gstEnabled: false,
@@ -43,6 +44,7 @@ const AddExpense = () => {
     const [categories, setCategories] = useState([]);
     const [paymentModes] = useState(['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'Card']);
     const [gstRates] = useState([0, 5, 12, 18, 28]);
+    const [accounts, setAccounts] = useState([]); // New State
 
     // UI States
     const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -64,6 +66,7 @@ const AddExpense = () => {
     useEffect(() => {
         fetchParties();
         fetchCategories();
+        fetchAccounts(); // Fetch accounts
         
         if (isEditMode) {
             fetchExpenseDetails();
@@ -92,6 +95,7 @@ const AddExpense = () => {
                 category: data.category || '',
                 paymentMode: data.paymentMode || 'Cash',
                 description: data.description || '',
+                accountId: data.accountId || '', // Set account ID
                 
                 // GST Fields
                 gstEnabled: data.gstEnabled || false,
@@ -125,6 +129,15 @@ const AddExpense = () => {
             setCategories(response.data);
         } catch (error) {
             console.error('Error fetching categories:', error);
+        }
+    };
+
+    const fetchAccounts = async () => {
+        try {
+            const response = await api.get('/accounts');
+            setAccounts(response.data); 
+        } catch (error) {
+            console.error('Error fetching accounts:', error);
         }
     };
 
@@ -487,6 +500,27 @@ const AddExpense = () => {
                                     <option value="Select">Select</option>
                                     {paymentModes.map(mode => (
                                         <option key={mode} value={mode}>{mode}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            </div>
+                        </div>
+
+                        {/* Accounts Selection */}
+                        <div className="space-y-1.5 animate-in fade-in slide-in-from-top-1">
+                            <label className="text-xs text-gray-500 font-medium ml-1">Paid From Account (Optional)</label>
+                            <div className="relative">
+                                <select 
+                                    name="accountId"
+                                    value={formData.accountId}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none appearance-none font-medium"
+                                >
+                                    <option value="">Select Account</option>
+                                    {accounts.map(account => (
+                                        <option key={account._id} value={account._id}>
+                                            {account.name} {account.bankName ? `(${account.bankName})` : ''} - {account.type}
+                                        </option>
                                     ))}
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />

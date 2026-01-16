@@ -65,6 +65,35 @@ const AddInvoice = () => {
       generateInvoiceNo();
   }, []);
 
+  // Check for newly created party from localStorage
+  useEffect(() => {
+      const newPartyData = localStorage.getItem('newlyCreatedParty');
+      if (newPartyData) {
+          try {
+              const newParty = JSON.parse(newPartyData);
+              setFormData(prev => ({ 
+                  ...prev, 
+                  party: newParty,
+                  stateOfSupply: newParty.placeOfSupply || ''
+              }));
+              // Clear from localStorage after using
+              localStorage.removeItem('newlyCreatedParty');
+              
+              // Show success toast
+              Swal.fire({
+                  toast: true,
+                  position: 'top-end',
+                  icon: 'success',
+                  title: `${newParty.name} selected`,
+                  showConfirmButton: false,
+                  timer: 2000
+              });
+          } catch (error) {
+              console.error('Error parsing newly created party:', error);
+          }
+      }
+  }, []);
+
   const [searchParty, setSearchParty] = useState('');
   const [showPartyDropdown, setShowPartyDropdown] = useState(false);
   
@@ -327,12 +356,9 @@ const AddInvoice = () => {
                           }}
                           onFocus={() => setShowPartyDropdown(true)}
                         />
-                        <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center shrink-0 shadow-lg shadow-black/20">
-                            <Plus size={16} />
-                        </div>
                       </div>
                       
-                      {showPartyDropdown && (
+                      {showPartyDropdown && searchParty.length > 0 && (
                         <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-xl shadow-2xl mt-2 z-50 max-h-60 overflow-y-auto ring-1 ring-black/5">
                           {parties.filter(p => p.name.toLowerCase().includes(searchParty.toLowerCase())).map(party => (
                             <div 
@@ -354,6 +380,15 @@ const AddInvoice = () => {
                           {parties.filter(p => p.name.toLowerCase().includes(searchParty.toLowerCase())).length === 0 && (
                              <div className="p-4 text-center text-sm text-gray-500 font-medium">No parties found</div>
                           )}
+                          <div className="p-3 border-t border-gray-100 bg-gray-50">
+                            <button 
+                              onClick={() => navigate(`/add-party?returnTo=${encodeURIComponent(location.pathname)}`)}
+                              className="w-full py-2.5 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Plus size={16} />
+                              Create New Customer
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -695,20 +730,21 @@ const AddInvoice = () => {
                   </div>
                   <div className="flex justify-between items-center group gap-2">
                     <div className="flex flex-col shrink-0">
-                       <span className="text-xs font-bold text-blue-600 uppercase flex items-center gap-1 cursor-pointer hover:underline whitespace-nowrap">
+                       <span className="text-xs font-bold text-blue-600 uppercase flex items-center gap-1 cursor-pointer whitespace-nowrap">
                          <Plus size={10} /> Add Charges
                        </span>
                     </div>
                     <input 
                       type="number" 
                       className="w-24 text-right bg-transparent border-none outline-none text-xs font-bold text-gray-400 focus:text-gray-900 border-b border-dashed border-transparent focus:border-gray-200 transition-colors"
-                      value={formData.additionalCharges}
+                      placeholder="0"
+                      value={formData.additionalCharges === 0 ? '' : formData.additionalCharges}
                       onChange={(e) => setFormData({...formData, additionalCharges: parseFloat(e.target.value) || 0})}
                     />
                   </div>
                   <div className="flex justify-between items-center group gap-2">
                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-blue-600 uppercase flex items-center gap-1 cursor-pointer hover:underline whitespace-nowrap">
+                        <span className="text-xs font-bold text-blue-600 uppercase flex items-center gap-1 cursor-pointer whitespace-nowrap">
                            <Plus size={10} /> Discount
                         </span>
                         <select 
@@ -723,7 +759,8 @@ const AddInvoice = () => {
                      <input 
                       type="number" 
                       className="w-24 text-right bg-transparent border-none outline-none text-xs font-bold text-gray-400 focus:text-gray-900 border-b border-dashed border-transparent focus:border-gray-200 transition-colors"
-                      value={formData.overallDiscount}
+                      placeholder="0"
+                      value={formData.overallDiscount === 0 ? '' : formData.overallDiscount}
                       onChange={(e) => setFormData({...formData, overallDiscount: parseFloat(e.target.value) || 0})}
                     />
                   </div>
@@ -794,7 +831,8 @@ const AddInvoice = () => {
                            <input 
                              type="number" 
                              className="bg-transparent border-none outline-none flex-1 font-black text-gray-800 text-sm min-w-0"
-                             value={formData.amountReceived}
+                             placeholder="0"
+                             value={formData.amountReceived === 0 ? '' : formData.amountReceived}
                              onChange={(e) => setFormData({...formData, amountReceived: parseFloat(e.target.value) || 0})}
                            />
                         </div>

@@ -136,15 +136,34 @@ const ViewQuotation = () => {
              <div ref={componentRef} className="bg-white shadow-lg rounded-xl overflow-hidden print:shadow-none print:rounded-none print:overflow-visible print:w-full">
                  
                  {/* Print Header */}
-                 <div className="p-6 sm:p-8 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight mb-1">Quotation</h1>
-                        <p className="text-xs text-gray-500 font-medium">Original Copy</p>
+                 <div className="p-6 sm:p-8 border-b border-gray-200 flex flex-col sm:flex-row justify-between gap-4">
+                    {/* Company Info Left */}
+                    <div className="w-[60%] flex gap-4">
+                        <div className="w-16 h-16 border-2 border-yellow-500 rounded-full flex items-center justify-center p-0.5 shrink-0">
+                            <div className="w-full h-full bg-black rounded-full flex flex-col items-center justify-center text-white overflow-hidden p-0.5">
+                                <div className="text-[8px] font-black leading-none">FAIZAN</div>
+                                <div className="text-[5px] opacity-70">AQUACULTURE</div>
+                            </div>
+                        </div>
+                        <div className="flex-1">
+                            <h1 className="text-lg font-black leading-tight mb-1 text-black">FAIZAN MACHINERY & AQUA CULTURE</h1>
+                            <p className="text-[9px] leading-tight mb-1 font-medium text-gray-600">BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192</p>
+                            <div className="grid grid-cols-2 text-[9px] font-medium text-gray-600">
+                                <div><strong>GSTIN:</strong> 09DWAPK9067Q1ZJ</div>
+                                <div><strong>Mobile:</strong> 9839280238</div>
+                                <div><strong>PAN:</strong> DWAPK9069Q</div>
+                            </div>
+                            <div className="text-[9px] font-medium text-gray-600"><strong>Email:</strong> fmaaquaculture@gmail.com</div>
+                        </div>
                     </div>
+
+                    {/* Quotation Details Right */}
                     <div className="text-left sm:text-right w-full sm:w-auto">
-                        <h2 className="text-lg font-bold text-gray-900">{quotation.quotationNo}</h2>
-                        <p className="text-xs text-gray-500 mt-1">Date: {new Date(quotation.date).toLocaleDateString('en-IN')}</p>
-                        <p className="text-xs text-gray-500">Valid Until: {new Date(quotation.validityDate).toLocaleDateString('en-IN')}</p>
+                        <h1 className="text-xl sm:text-2xl font-black text-gray-900 uppercase tracking-tight mb-1">Quotation</h1>
+                        <p className="text-xs text-gray-500 font-bold mb-4">Original Copy</p>
+                        <h2 className="text-lg font-bold text-gray-900">#{quotation.quotationNo}</h2>
+                        <p className="text-xs text-gray-500 mt-1">Date: {new Date(quotation.date).toLocaleDateString('en-GB')}</p>
+                        <p className="text-xs text-gray-500">Valid Until: {new Date(quotation.validityDate).toLocaleDateString('en-GB')}</p>
                     </div>
                  </div>
 
@@ -233,7 +252,7 @@ const ViewQuotation = () => {
                      <div className="space-y-2 text-left sm:text-right">
                          <h4 className="font-black text-gray-900 uppercase tracking-widest">Authorized Signatory</h4>
                          <div className="h-12"></div>
-                         <p>For Your Company Name</p>
+                         <p className="font-bold">For FAIZAN MACHINERY & AQUA CULTURE</p>
                      </div>
                  </div>
              </div>

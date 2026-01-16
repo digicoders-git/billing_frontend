@@ -243,7 +243,7 @@ const AddQuotation = () => {
             <div className="col-span-12 lg:col-span-9 space-y-4">
               
               {/* Bill To Section */}
-              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm overflow-hidden min-h-[160px] relative">
+              <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 shadow-sm overflow-visible min-h-[160px] relative">
                 <div className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] mb-4">Quotation For</div>
                 {!formData.party ? (
                   <div className="flex flex-col gap-4">
@@ -266,7 +266,7 @@ const AddQuotation = () => {
                         </div>
                       </div>
                       
-                      {showPartyDropdown && (
+                      {showPartyDropdown && searchParty.length > 0 && (
                         <div className="absolute top-full left-0 w-full bg-white border border-gray-200 rounded-xl shadow-2xl mt-2 z-50 max-h-60 overflow-y-auto ring-1 ring-black/5">
                           {parties.filter(p => p.name.toLowerCase().includes(searchParty.toLowerCase())).map(party => (
                             <div 
@@ -313,7 +313,7 @@ const AddQuotation = () => {
               </div>
 
               {/* Items Section */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-visible">
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">

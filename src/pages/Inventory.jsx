@@ -15,6 +15,13 @@ import api from '../lib/axios';
 
 import useUserPermissions from '../hooks/useUserPermissions';
 
+const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 28% + Cess @ 60%"
+];
+
 const Inventory = () => {
     const { canCreate, canEdit, canDelete } = useUserPermissions('Items');
   const [searchTerm, setSearchTerm] = useState('');
@@ -39,7 +46,8 @@ const Inventory = () => {
       sellingPrice: 0,
       mrp: 0,
       wholesalePrice: 0,
-      description: ''
+      description: '',
+      gstRate: 'None'
   });
   
   // State for Viewing Item
@@ -109,6 +117,33 @@ const Inventory = () => {
   }).length;
 
   const handleSaveCategory = () => {
+    const trimmedCategory = categoryName.trim();
+    
+    if (!trimmedCategory) {
+        Swal.fire('Error', 'Category Name is required', 'error');
+        return;
+    }
+
+    if (/^\d+$/.test(trimmedCategory)) {
+        Swal.fire('Error', 'Category Name cannot be purely numbers', 'error');
+        return;
+    }
+
+    if (trimmedCategory.length < 3) {
+        Swal.fire('Error', 'Category Name must be at least 3 characters long', 'error');
+        return;
+    }
+
+    const exists = categories.some(c => c.name.toLowerCase() === trimmedCategory.toLowerCase());
+    if (exists) {
+        Swal.fire('Error', 'Category already exists', 'error');
+        return;
+    }
+    
+    // Update local state to show in dropdowns immediately
+    setCategories(prev => [...prev, { id: Date.now(), name: trimmedCategory, count: 0 }]);
+    Swal.fire('Success', 'Category added successfully', 'success');
+
     setShowCategoryModal(false);
     setCategoryName('');
   };
@@ -120,7 +155,7 @@ const Inventory = () => {
       setItemFormData({
         name: '', code: '', category: '', unit: 'PCS',
         stock: 0, minStock: 5, purchasePrice: 0,
-        sellingPrice: 0, mrp: 0, wholesalePrice: 0, description: ''
+        sellingPrice: 0, mrp: 0, wholesalePrice: 0, description: '', gstRate: 'None'
       });
       setShowItemModal(true);
   };
@@ -136,10 +171,38 @@ const Inventory = () => {
       setShowViewModal(true);
   };
 
+  const getStockStyle = (stock, minStock) => {
+    if (stock < 0) return 'bg-red-600 text-white border-red-700';
+    if (stock <= (minStock || 5)) return 'bg-orange-50 text-orange-600 border-orange-100';
+    return 'bg-green-50 text-green-600 border-green-100';
+  };
+
   const handleSaveItem = async () => {
-      if (!itemFormData.name) {
+      const trimmedName = itemFormData.name.trim();
+
+      if (!trimmedName) {
           Swal.fire('Error', 'Item Name is required', 'error');
           return;
+      }
+
+      if (/^\d+$/.test(trimmedName)) {
+        Swal.fire('Error', 'Item Name cannot be purely numbers', 'error');
+        return;
+      }
+
+      if (trimmedName.length < 3) {
+        Swal.fire('Error', 'Item Name must be at least 3 characters long', 'error');
+        return;
+      }
+
+      if (parseFloat(itemFormData.stock) < 0) {
+        Swal.fire('Error', 'Stock cannot be negative', 'error');
+        return;
+      }
+      
+      if (parseFloat(itemFormData.purchasePrice) < 0 || parseFloat(itemFormData.sellingPrice) < 0) {
+        Swal.fire('Error', 'Prices cannot be negative', 'error');
+        return;
       }
 
       try {
@@ -450,7 +513,7 @@ const Inventory = () => {
                               </div>
                           </td>
                           <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.stock > (item.minStock || 5) ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
                                   {item.stock} {item.unit}
                               </span>
                           </td>
@@ -490,7 +553,7 @@ const Inventory = () => {
                               <span className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">{item.category}</span>
                           </div>
                       </div>
-                      <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${item.stock > (item.minStock || 5) ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                      <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
                           {item.stock} {item.unit}
                       </span>
                   </div>
@@ -601,19 +664,33 @@ const Inventory = () => {
                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Opening Stock</label>
                              <input 
                                 type="number"
-                                value={itemFormData.stock}
+                                value={itemFormData.stock === 0 ? '' : itemFormData.stock}
                                 onChange={(e) => setItemFormData({...itemFormData, stock: e.target.value})}
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                placeholder="0"
                              />
                          </div>
                          <div>
                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Low Stock Alert Level</label>
                              <input 
                                 type="number"
-                                value={itemFormData.minStock}
+                                value={itemFormData.minStock === 0 ? '' : itemFormData.minStock}
                                 onChange={(e) => setItemFormData({...itemFormData, minStock: e.target.value})}
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                placeholder="0"
                              />
+                         </div>
+
+                         {/* GST Selection */}
+                         <div>
+                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">GST Rate</label>
+                             <select 
+                                value={itemFormData.gstRate || 'None'} 
+                                onChange={(e) => setItemFormData({...itemFormData, gstRate: e.target.value})}
+                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                             >
+                                 {gstOptions.map(rate => <option key={rate} value={rate}>{rate}</option>)}
+                             </select>
                          </div>
 
                          {/* Pricing */}
@@ -623,9 +700,10 @@ const Inventory = () => {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
                                 <input 
                                     type="number"
-                                    value={itemFormData.purchasePrice}
+                                    value={itemFormData.purchasePrice === 0 ? '' : itemFormData.purchasePrice}
                                     onChange={(e) => setItemFormData({...itemFormData, purchasePrice: e.target.value})}
                                     className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                    placeholder="0"
                                 />
                              </div>
                          </div>
@@ -635,9 +713,10 @@ const Inventory = () => {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
                                 <input 
                                     type="number"
-                                    value={itemFormData.sellingPrice}
+                                    value={itemFormData.sellingPrice === 0 ? '' : itemFormData.sellingPrice}
                                     onChange={(e) => setItemFormData({...itemFormData, sellingPrice: e.target.value})}
                                     className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                    placeholder="0"
                                 />
                              </div>
                          </div>
@@ -647,9 +726,10 @@ const Inventory = () => {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
                                 <input 
                                     type="number"
-                                    value={itemFormData.mrp}
+                                    value={itemFormData.mrp === 0 ? '' : itemFormData.mrp}
                                     onChange={(e) => setItemFormData({...itemFormData, mrp: e.target.value})}
                                     className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                    placeholder="0"
                                 />
                              </div>
                          </div>
@@ -659,9 +739,10 @@ const Inventory = () => {
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₹</span>
                                 <input 
                                     type="number"
-                                    value={itemFormData.wholesalePrice}
+                                    value={itemFormData.wholesalePrice === 0 ? '' : itemFormData.wholesalePrice}
                                     onChange={(e) => setItemFormData({...itemFormData, wholesalePrice: e.target.value})}
                                     className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                    placeholder="0"
                                 />
                              </div>
                          </div>
@@ -721,6 +802,55 @@ const Inventory = () => {
                         <div>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Wholesale</p>
                             <p className="text-lg font-bold text-gray-900">₹{viewedItem.wholesalePrice?.toLocaleString()}</p>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GST Applied</p>
+                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${viewedItem.gstRate && viewedItem.gstRate !== 'None' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-gray-100 text-gray-500'}`}>
+                                {viewedItem.gstRate || 'None'}
+                            </span>
+                        </div>
+                        
+                        <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Value (Inc. Tax)</p>
+                             <div className="flex flex-col">
+                                <p className="text-lg font-bold text-emerald-600">
+                                    ₹{(() => {
+                                        const rateStr = viewedItem.gstRate || 'None';
+                                        let rate = 0;
+                                        if (rateStr !== 'None' && rateStr !== 'Exempted') {
+                                            const matches = rateStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+                                            if (matches) {
+                                                rate = matches.reduce((acc, val) => {
+                                                    const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                                                    return acc + (isNaN(num) ? 0 : num);
+                                                }, 0);
+                                            }
+                                        }
+                                        const price = viewedItem.sellingPrice || 0;
+                                        const taxAmount = price * (rate / 100);
+                                        return (price + taxAmount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    })()}
+                                </p>
+                                <p className="text-[10px] font-bold text-gray-400">
+                                    (+ ₹{(() => {
+                                        const rateStr = viewedItem.gstRate || 'None';
+                                        let rate = 0;
+                                        if (rateStr !== 'None' && rateStr !== 'Exempted') {
+                                            const matches = rateStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+                                            if (matches) {
+                                                rate = matches.reduce((acc, val) => {
+                                                    const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                                                    return acc + (isNaN(num) ? 0 : num);
+                                                }, 0);
+                                            }
+                                        }
+                                        const price = viewedItem.sellingPrice || 0;
+                                        const taxAmount = price * (rate / 100);
+                                        return taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    })()} Tax)
+                                </p>
+                             </div>
                         </div>
                         
                         <div className="col-span-2 pt-4 border-t border-gray-50">

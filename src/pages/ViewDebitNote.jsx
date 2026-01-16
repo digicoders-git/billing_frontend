@@ -134,20 +134,37 @@ const ViewDebitNote = () => {
              <div ref={componentRef} className="bg-white shadow-2xl rounded-3xl overflow-hidden print:shadow-none print:rounded-none print:overflow-visible print:w-full printable-voucher border border-gray-100">
                  
                  {/* Print Header */}
-                 <div className="p-8 sm:p-12 border-b-4 border-gray-900 flex flex-col sm:flex-row justify-between items-start gap-6 bg-white">
-                    <div>
-                        <div className="flex items-center gap-4 mb-4">
-                            <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white">
-                                <ScanBarcode size={24} />
+                 <div className="p-8 border-b-4 border-gray-900 flex flex-col sm:flex-row justify-between gap-6 bg-white">
+                    {/* Company Info Left */}
+                    <div className="w-[60%] flex gap-4">
+                        <div className="w-16 h-16 border-2 border-yellow-500 rounded-full flex items-center justify-center p-0.5 shrink-0">
+                            <div className="w-full h-full bg-black rounded-full flex flex-col items-center justify-center text-white overflow-hidden p-0.5">
+                                <div className="text-[8px] font-black leading-none">FAIZAN</div>
+                                <div className="text-[5px] opacity-70">AQUACULTURE</div>
                             </div>
-                            <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Debit Note</h1>
+                        </div>
+                        <div className="flex-1">
+                            <h1 className="text-lg font-black leading-tight mb-1 text-black">FAIZAN MACHINERY & AQUA CULTURE</h1>
+                            <p className="text-[9px] leading-tight mb-1 font-medium text-gray-600">BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192</p>
+                            <div className="grid grid-cols-2 text-[9px] font-medium text-gray-600">
+                                <div><strong>GSTIN:</strong> 09DWAPK9067Q1ZJ</div>
+                                <div><strong>Mobile:</strong> 9839280238</div>
+                                <div><strong>PAN:</strong> DWAPK9069Q</div>
+                            </div>
+                            <div className="text-[9px] font-medium text-gray-600"><strong>Email:</strong> fmaaquaculture@gmail.com</div>
+                        </div>
+                    </div>
+
+                    {/* Debit Note Details Right */}
+                    <div className="text-left sm:text-right w-full sm:w-auto">
+                        <div className="flex items-center gap-4 mb-2 justify-end">
+                             <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic">Debit Note</h1>
                         </div>
                         <p className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-[4px] inline-block mb-4">Financial Ledger Adjustment</p>
-                    </div>
-                    <div className="text-left sm:text-right w-full sm:w-auto">
+                        
                         <div className="text-xl font-black text-gray-900 italic tracking-widest mb-1 uppercase">#{noteData.returnNo}</div>
                         <div className="space-y-1">
-                            <p className="text-[11px] text-gray-400 font-black uppercase tracking-widest italic">Registry Date: <span className="text-gray-900 not-italic">{new Date(noteData.date).toLocaleDateString('en-IN')}</span></p>
+                            <p className="text-[11px] text-gray-400 font-black uppercase tracking-widest italic">Registry Date: <span className="text-gray-900 not-italic">{new Date(noteData.date).toLocaleDateString('en-GB')}</span></p>
                             {noteData.originalInvoiceNo && (
                                 <p className="text-[11px] text-gray-400 font-black uppercase tracking-widest italic">Bill Ref: <span className="text-indigo-600 not-italic">#{noteData.originalInvoiceNo}</span></p>
                             )}
@@ -270,10 +287,10 @@ const ViewDebitNote = () => {
                                   </div>
                               </div>
 
-                              <div className="mt-12 text-center sm:text-right pt-12">
-                                  <div className="w-full h-px bg-gray-100 mb-2" />
-                                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[4px]">Authorized Entry Seal</p>
-                              </div>
+                               <div className="mt-12 text-center sm:text-right pt-12">
+                                   <div className="w-full h-px bg-gray-100 mb-2" />
+                                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-[4px]">For FAIZAN MACHINERY & AQUA CULTURE</p>
+                               </div>
                          </div>
                      </div>
                  </div>

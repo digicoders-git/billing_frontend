@@ -342,32 +342,32 @@ const AddCreditNote = () => {
               </div>
 
               {/* Items Section Table */}
-              <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-50">
-                    <div className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">Line Items</div>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-visible">
+                <div className="p-6 border-b border-gray-100">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">Line Items</h3>
                 </div>
                 
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">
-                    <thead className="bg-[#FDFDFF] text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <thead className="bg-gray-50 text-xs font-black text-gray-600 uppercase tracking-wider border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 text-left w-12 text-gray-300">#</th>
-                        <th className="px-6 py-4 text-left min-w-[300px]">Item Description</th>
-                        <th className="px-6 py-4 text-center w-24">HSN</th>
-                        <th className="px-6 py-4 text-center w-40">QTY</th>
-                        <th className="px-6 py-4 text-right w-56">Rate (₹)</th>
-                        <th className="px-6 py-4 text-right w-56">Amount (₹)</th>
-                        <th className="px-6 py-4 text-center w-12"></th>
+                        <th className="px-4 py-4 text-left w-12">#</th>
+                        <th className="px-4 py-4 text-left min-w-[280px]">Item Description</th>
+                        <th className="px-4 py-4 text-center w-32">HSN</th>
+                        <th className="px-4 py-4 text-center w-40">QTY</th>
+                        <th className="px-4 py-4 text-right w-40">Rate (₹)</th>
+                        <th className="px-4 py-4 text-right w-40">Amount (₹)</th>
+                        <th className="px-4 py-4 text-center w-12"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50/50">
+                    <tbody className="divide-y divide-gray-100">
                       {formData.items.map((item, index) => (
-                        <tr key={item.id} className="hover:bg-indigo-50/20 transition-colors group">
-                          <td className="px-6 py-5 text-center text-xs text-gray-300 font-black">{index + 1}</td>
-                          <td className="px-6 py-5">
+                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
+                          <td className="px-4 py-4 text-center text-sm text-gray-400 font-bold">{index + 1}</td>
+                          <td className="px-4 py-4">
                             <input 
                               type="text" 
-                              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-4 outline-none text-base font-bold !text-black uppercase placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all font-sans"
+                              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none text-sm font-bold text-gray-900 uppercase placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
                               placeholder="Enter item name..."
                               value={item.name}
                               onChange={(e) => updateItem(item.id, 'name', e.target.value)}
@@ -377,32 +377,32 @@ const AddCreditNote = () => {
                                 {itemsPool.map(i => <option key={i._id} value={i.name} />)}
                             </datalist>
                           </td>
-                          <td className="px-6 py-5">
+                          <td className="px-4 py-4">
                             <input 
                               type="text" 
-                              className="w-full bg-white border border-gray-200 rounded-xl px-3 py-3 outline-none text-sm text-center font-bold text-gray-600 focus:border-indigo-500 transition-all placeholder:text-gray-300"
+                              className="w-full bg-white border border-gray-200 rounded-lg px-3 py-3 outline-none text-sm text-center font-bold text-gray-700 focus:border-indigo-400 transition-all placeholder:text-gray-300"
                               placeholder="HSN"
                               value={item.hsn}
                               onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
                             />
                           </td>
-                           <td className="px-6 py-5">
-                              <div className="flex items-center h-12 bg-white border border-gray-200 rounded-xl px-3 w-full focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all shadow-sm">
+                           <td className="px-4 py-4">
+                              <div className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-3 w-full focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
                                 <input 
                                   type="number" 
-                                  className="w-full bg-transparent border-none outline-none text-center text-base font-bold !text-black placeholder:text-gray-300"
+                                  className="w-full bg-transparent border-none outline-none text-center text-sm font-bold text-gray-900 placeholder:text-gray-300"
                                   value={item.qty}
                                   onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
                                   placeholder="0"
                                 />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase ml-2 shrink-0">{item.unit || 'PCS'}</span>
+                                <span className="text-xs font-bold text-gray-500 uppercase ml-2 shrink-0">{item.unit || 'PCS'}</span>
                               </div>
                           </td>
-                          <td className="px-6 py-5 text-right">
+                          <td className="px-4 py-4 text-right">
                              <input 
                               type="text" 
                               inputMode="decimal"
-                              className="w-full h-12 bg-white border border-gray-200 rounded-xl px-4 outline-none text-right text-base font-bold !text-black focus:border-indigo-500 transition-all placeholder:text-gray-300"
+                              className="w-full bg-white border border-gray-200 rounded-lg px-4 py-3 outline-none text-right text-sm font-bold text-gray-900 focus:border-indigo-400 transition-all placeholder:text-gray-300"
                               placeholder="0.00"
                               value={item.rate}
                               onChange={(e) => {
@@ -413,12 +413,12 @@ const AddCreditNote = () => {
                               }}
                             />
                           </td>
-                          <td className="px-6 py-5 text-right font-black text-gray-900 text-sm">
-                            <span className="text-gray-300 mr-1 text-xs">₹</span>
+                          <td className="px-4 py-4 text-right font-black text-gray-900 text-base">
+                            <span className="text-gray-400 mr-1 text-sm">₹</span>
                             {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-5 text-center">
-                             <button onClick={() => removeItem(item.id)} className="p-1.5 text-gray-200 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                          <td className="px-4 py-4 text-center">
+                             <button onClick={() => removeItem(item.id)} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
                                 <Trash2 size={16} />
                              </button>
                           </td>
@@ -429,16 +429,16 @@ const AddCreditNote = () => {
                 </div>
 
                 {/* Mobile Item Cards */}
-                <div className="md:hidden divide-y divide-gray-50">
+                <div className="md:hidden divide-y divide-gray-100">
                   {formData.items.map((item, index) => (
                     <div key={item.id} className="p-5 space-y-4">
-                        <div className="flex justify-between items-center bg-gray-50 px-3 py-1.5 rounded-lg">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Item #{index + 1}</span>
+                        <div className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg">
+                            <span className="text-xs font-black text-gray-500 uppercase tracking-wider">Item #{index + 1}</span>
                             <button onClick={() => removeItem(item.id)} className="text-red-500 p-1"><Trash2 size={16} /></button>
                         </div>
                         <input 
                             type="text" 
-                            className="w-full text-base font-black text-gray-900 uppercase placeholder:text-gray-300 border border-gray-200 rounded-xl px-4 py-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                            className="w-full text-sm font-bold text-gray-900 uppercase placeholder:text-gray-400 border border-gray-200 rounded-lg px-4 py-3 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                             placeholder="Item Description"
                             value={item.name}
                             onChange={(e) => updateItem(item.id, 'name', e.target.value)}
@@ -447,21 +447,21 @@ const AddCreditNote = () => {
                         <datalist id={`items-list-mobile-${item.id}`}>
                               {itemsPool.map(i => <option key={i._id} value={i.name} />)}
                         </datalist>
-                        <div className="grid grid-cols-2 gap-6 pt-2">
-                             <div className="space-y-1">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</label>
-                                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-3 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
-                                    <input type="number" className="w-full bg-transparent border-none outline-none text-sm font-black text-indigo-600" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
-                                    <span className="text-[10px] font-black text-gray-400 uppercase">PCS</span>
+                        <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-500 uppercase tracking-wider">Quantity</label>
+                                <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-3 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                                    <input type="number" className="w-full bg-transparent border-none outline-none text-sm font-bold text-gray-900" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
+                                    <span className="text-xs font-bold text-gray-500 uppercase">PCS</span>
                                 </div>
                              </div>
-                             <div className="space-y-1">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rate (₹)</label>
-                                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-4 py-3 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
+                             <div className="space-y-2">
+                                <label className="text-xs font-black text-gray-500 uppercase tracking-wider">Rate (₹)</label>
+                                <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-4 py-3 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
                                     <input 
                                       type="text" 
                                       inputMode="decimal"
-                                      className="w-full bg-transparent border-none outline-none text-sm font-black text-gray-900" 
+                                      className="w-full bg-transparent border-none outline-none text-sm font-bold text-gray-900" 
                                       placeholder="0.00"
                                       value={item.rate || ''} 
                                       onChange={(e) => {
@@ -474,18 +474,18 @@ const AddCreditNote = () => {
                                 </div>
                              </div>
                         </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-dashed border-gray-100">
-                             <span className="text-[10px] font-black text-gray-400 uppercase">Line Total</span>
+                        <div className="flex justify-between items-center pt-3 border-t border-dashed border-gray-200">
+                             <span className="text-xs font-black text-gray-500 uppercase">Line Total</span>
                              <span className="text-lg font-black text-indigo-600">₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="p-6 bg-[#FDFDFF] border-t border-gray-50">
+                <div className="p-6 bg-gray-50/50 border-t border-gray-100">
                    <button 
                     onClick={addItem}
-                    className="w-full py-4 border-2 border-dashed border-indigo-100 rounded-[16px] text-indigo-600 font-black text-xs uppercase tracking-[3px] hover:bg-white hover:border-indigo-300 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 group"
+                    className="w-full py-4 border-2 border-dashed border-indigo-200 rounded-xl text-indigo-600 font-black text-sm uppercase tracking-wider hover:bg-indigo-50 hover:border-indigo-300 transition-all flex items-center justify-center gap-3 group"
                    >
                      <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                      Add Item Row

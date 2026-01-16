@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -271,6 +272,7 @@ const Expenses = () => {
                                     <th className="px-6 py-4">Date <ChevronDown size={12} className="inline ml-1" /></th>
                                     <th className="px-6 py-4">Expense Number</th>
                                     <th className="px-6 py-4">Party Name</th>
+                                    <th className="px-6 py-4">Paid Via</th>
                                     <th className="px-6 py-4">Category</th>
                                     <th className="px-6 py-4">Amount <ChevronDown size={12} className="inline ml-1" /></th>
                                     <th className="px-6 py-4"></th>
@@ -279,13 +281,13 @@ const Expenses = () => {
                             <tbody className="divide-y divide-gray-50">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
+                                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
                                             Loading Expenses...
                                         </td>
                                     </tr>
                                 ) : filteredExpenses.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
+                                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
                                             No Expenses Found
                                             <div className="mt-4 flex justify-center opacity-50">
                                                 <FileText size={48} className="text-gray-200" />
@@ -298,6 +300,14 @@ const Expenses = () => {
                                             <td className="px-6 py-4 text-sm text-gray-600 font-medium">{new Date(item.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-medium">{item.expenseNumber}</td>
                                             <td className="px-6 py-4 text-sm text-gray-800 font-black uppercase tracking-tight">{item.partyName || '-'}</td>
+                                            <td className="px-6 py-4 text-sm">
+                                                <div className="font-bold text-gray-700">{item.paymentMode}</div>
+                                                {item.accountId && (
+                                                    <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wide">
+                                                        {item.accountId.name || 'Unknown Account'}
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-gray-500 font-medium bg-gray-50 inline-block rounded my-2 px-2 py-1">{item.category}</td>
                                             <td className="px-6 py-4">
                                                 <div className="text-sm font-bold text-gray-900">₹ {item.amount.toLocaleString()}</div>

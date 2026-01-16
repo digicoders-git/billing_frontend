@@ -127,14 +127,14 @@ const InvoicePDF = () => {
     const roundedTotal = invoiceData.totalAmount || 0;
     const balance = invoiceData.balanceAmount || 0;
 
-    // Company Info - Dynamic with hardcoded fallback
+    // Company Info - Hardcoded to match provided invoice image
     const company = {
-        name: userProfile?.businessName || userProfile?.name || 'FAIZAN MACHINERY & AQUA CULTURE',
-        address: userProfile?.address || 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, Siddharthnagar, Uttar Pradesh, 272192',
-        gstin: userProfile?.gstin || '09DWAPK9067Q1ZJ',
-        mobile: userProfile?.phone || '9839280238',
-        pan: 'DWAPK9069Q', // Not in User model yet
-        email: userProfile?.email || 'fmaaquaculture@gmail.com',
+        name: 'FAIZAN MACHINERY & AQUA CULTURE',
+        address: 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192',
+        gstin: '09DWAPK9067Q1ZJ',
+        mobile: '9839280238',
+        pan: 'DWAPK9069Q', 
+        email: 'fmaaquaculture@gmail.com',
         website: 'www.faizanaquaculture.in'
     };
 
@@ -170,7 +170,7 @@ const InvoicePDF = () => {
         amountInWords: numberToWords(roundedTotal),
         terms: (invoiceData.terms || '').split('\n').filter(t => t.trim() !== ''),
         bank: {
-            name: 'FAIZAN MACHINERY AND AQUACULTURE',
+            name: 'FAIZAN MACHINERY & AQUA CULTURE',
             ifsc: 'HDFC0005168',
             accountNo: '50200073192648',
             bankName: 'HDFC Bank, ITWA'

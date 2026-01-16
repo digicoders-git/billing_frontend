@@ -1,66 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { ArrowLeft, Edit, FileText, CreditCard, Calendar, User, Building } from 'lucide-react';
+import api from '../lib/axios';
+import Swal from 'sweetalert2';
 
 const ViewInvoice = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  
+  const [invoice, setInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Sample invoice data - in real app, fetch by ID
-  const invoice = {
-    id: 1,
-    invoiceNo: 'INV-2024-001',
-    date: '2024-01-15',
-    dueDate: '2024-02-14',
-    partyName: 'ABC Electronics Ltd',
-    partyAddress: '123 Business Park, Andheri East\nMumbai - 400069\nMaharashtra, India',
-    partyGSTIN: '27AABCU9603R1ZX',
-    partyPhone: '+91 9876543210',
-    partyEmail: 'contact@abcelectronics.com',
-    items: [
-      {
-        id: 1,
-        description: 'Laptop Computer - Dell Inspiron 15',
-        hsn: '8471',
-        qty: 2,
-        unit: 'PCS',
-        rate: 45000,
-        discount: 5,
-        taxRate: 18,
-        amount: 95940
-      },
-      {
-        id: 2,
-        description: 'Wireless Mouse - Logitech MX Master',
-        hsn: '8471',
-        qty: 2,
-        unit: 'PCS',
-        rate: 3500,
-        discount: 0,
-        taxRate: 18,
-        amount: 8260
+  // Fetch invoice data from API
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/invoices/${id}`);
+        setInvoice(response.data);
+      } catch (error) {
+        console.error('Error fetching invoice:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load invoice details',
+        });
+        navigate('/invoices');
+      } finally {
+        setLoading(false);
       }
-    ],
-    subtotal: 97000,
-    totalDiscount: 2250,
-    totalTax: 17064,
-    totalAmount: 104200,
-    paidAmount: 15000,
-    dueAmount: 89200,
-    status: 'partially_paid',
-    notes: 'Thank you for your business!',
-    terms: 'Payment due within 30 days. Late payments may incur additional charges.'
-  };
+    };
+
+    if (id) {
+      fetchInvoice();
+    }
+  }, [id, navigate]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading invoice...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show error if no invoice found
+  if (!invoice) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600 font-medium">Invoice not found</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      draft: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
-      partially_paid: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Partially Paid' },
-      paid: { bg: 'bg-green-100', text: 'text-green-800', label: 'Paid' }
+      'Draft': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Draft' },
+      'Paid': { bg: 'bg-green-100', text: 'text-green-800', label: 'Paid' },
+      'Unpaid': { bg: 'bg-red-100', text: 'text-red-800', label: 'Unpaid' },
+      'Partial': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Partially Paid' },
+      'Overdue': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Overdue' }
     };
     
-    const config = statusConfig[status] || statusConfig.draft;
+    const config = statusConfig[status] || statusConfig['Draft'];
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
         {config.label}
@@ -122,7 +136,7 @@ const ViewInvoice = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Paid Amount</p>
-                  <p className="text-xl font-black text-green-600">₹{invoice.paidAmount.toLocaleString('en-IN')}</p>
+                  <p className="text-xl font-black text-green-600">₹{(invoice.amountReceived || 0).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="p-3 bg-green-50 rounded-xl">
                   <CreditCard className="h-5 w-5 text-green-600" />
@@ -134,7 +148,7 @@ const ViewInvoice = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Due Amount</p>
-                  <p className="text-xl font-black text-red-600">₹{invoice.dueAmount.toLocaleString('en-IN')}</p>
+                  <p className="text-xl font-black text-red-600">₹{(invoice.balanceAmount || 0).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="p-3 bg-red-50 rounded-xl">
                   <Calendar className="h-5 w-5 text-red-600" />
@@ -194,20 +208,20 @@ const ViewInvoice = () => {
               <div className="space-y-3">
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-gray-400 uppercase mb-1">Party Name</span>
-                  <p className="font-black text-gray-900 uppercase tracking-tight">{invoice.partyName}</p>
+                  <p className="font-black text-gray-900 uppercase tracking-tight">{invoice.partyName || 'N/A'}</p>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs font-bold text-gray-400 uppercase mb-1">Address</span>
-                  <p className="text-sm font-medium text-gray-600 whitespace-pre-line leading-relaxed">{invoice.partyAddress}</p>
+                  <p className="text-sm font-medium text-gray-600 whitespace-pre-line leading-relaxed">{invoice.billingAddress || 'No address provided'}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-50 transition-all">
                   <div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">GSTIN</span>
-                    <p className="text-sm font-bold text-gray-800">{invoice.partyGSTIN}</p>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">State of Supply</span>
+                    <p className="text-sm font-bold text-gray-800">{invoice.stateOfSupply || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">Mobile</span>
-                    <p className="text-sm font-bold text-gray-800">{invoice.partyPhone}</p>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Payment Method</span>
+                    <p className="text-sm font-bold text-gray-800">{invoice.paymentMethod || 'Cash'}</p>
                   </div>
                 </div>
               </div>
@@ -237,16 +251,16 @@ const ViewInvoice = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {invoice.items.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-bold text-gray-800 uppercase tracking-tight">{item.description}</td>
-                      <td className="px-6 py-4 text-center text-xs text-gray-500 font-medium">{item.hsn}</td>
+                  {invoice.items.map((item, index) => (
+                    <tr key={item._id || index} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 text-sm font-bold text-gray-800 uppercase tracking-tight">{item.name}</td>
+                      <td className="px-6 py-4 text-center text-xs text-gray-500 font-medium">{item.hsn || 'N/A'}</td>
                       <td className="px-6 py-4 text-center text-sm font-bold text-gray-800">{item.qty}</td>
-                      <td className="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase">{item.unit}</td>
-                      <td className="px-6 py-4 text-right text-sm font-medium">₹{item.rate.toLocaleString('en-IN')}</td>
-                      <td className="px-6 py-4 text-right text-xs text-blue-600 font-bold">{item.discount}%</td>
-                      <td className="px-6 py-4 text-right text-xs text-orange-600 font-bold">{item.taxRate}%</td>
-                      <td className="px-6 py-4 text-right text-sm font-black text-gray-900">₹{item.amount.toLocaleString('en-IN')}</td>
+                      <td className="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase">{item.unit || 'PCS'}</td>
+                      <td className="px-6 py-4 text-right text-sm font-medium">₹{(item.rate || 0).toLocaleString('en-IN')}</td>
+                      <td className="px-6 py-4 text-right text-xs text-blue-600 font-bold">{item.discount || 0}%</td>
+                      <td className="px-6 py-4 text-right text-xs text-orange-600 font-bold">{item.tax || 0}%</td>
+                      <td className="px-6 py-4 text-right text-sm font-black text-gray-900">₹{(item.amount || 0).toLocaleString('en-IN')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -255,29 +269,29 @@ const ViewInvoice = () => {
 
             {/* Mobile View */}
             <div className="md:hidden divide-y divide-gray-50">
-              {invoice.items.map((item) => (
-                <div key={item.id} className="p-4 space-y-3">
-                  <div className="text-sm font-black text-gray-900 uppercase tracking-tight leading-tight">{item.description}</div>
+              {invoice.items.map((item, index) => (
+                <div key={item._id || index} className="p-4 space-y-3">
+                  <div className="text-sm font-black text-gray-900 uppercase tracking-tight leading-tight">{item.name}</div>
                   <div className="grid grid-cols-2 gap-y-2">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Qty / Unit</span>
-                      <span className="text-xs font-bold text-gray-700">{item.qty} {item.unit}</span>
+                      <span className="text-xs font-bold text-gray-700">{item.qty} {item.unit || 'PCS'}</span>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Rate</span>
-                      <span className="text-xs font-bold text-gray-700">₹{item.rate.toLocaleString('en-IN')}</span>
+                      <span className="text-xs font-bold text-gray-700">₹{(item.rate || 0).toLocaleString('en-IN')}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Tax / Disc</span>
                       <span className="text-[10px] font-bold">
-                        <span className="text-blue-600">{item.discount}% Disc</span>
+                        <span className="text-blue-600">{item.discount || 0}% Disc</span>
                         <span className="mx-1 text-gray-200">|</span>
-                        <span className="text-orange-600">{item.taxRate}% GST</span>
+                        <span className="text-orange-600">{item.tax || 0}% GST</span>
                       </span>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
-                      <span className="text-sm font-black text-gray-900">₹{item.amount.toLocaleString('en-IN')}</span>
+                      <span className="text-sm font-black text-gray-900">₹{(item.amount || 0).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 </div>
@@ -293,21 +307,50 @@ const ViewInvoice = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-gray-500 font-medium">Subtotal:</span>
-                  <span className="font-bold text-gray-800">₹{invoice.subtotal.toLocaleString('en-IN')}</span>
+                  <span className="font-bold text-gray-800">₹{(invoice.subtotal || 0).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500 font-medium">Total Discount:</span>
-                  <span className="font-bold text-red-600">-₹{invoice.totalDiscount.toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm pb-3">
-                  <span className="text-gray-500 font-medium">Total Tax:</span>
-                  <span className="font-bold text-orange-600">₹{invoice.totalTax.toLocaleString('en-IN')}</span>
-                </div>
+                {invoice.overallDiscount > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Discount:</span>
+                    <span className="font-bold text-red-600">-₹{(invoice.overallDiscount || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {invoice.additionalCharges > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 font-medium">Additional Charges:</span>
+                    <span className="font-bold text-green-600">+₹{(invoice.additionalCharges || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {invoice.gstEnabled && (
+                  <>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-500 font-medium">Taxable Amount:</span>
+                      <span className="font-bold text-gray-700">₹{(invoice.taxableAmount || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    {invoice.igst > 0 ? (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500 font-medium">IGST ({invoice.gstRate}%):</span>
+                        <span className="font-bold text-orange-600">₹{(invoice.igst || 0).toLocaleString('en-IN')}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500 font-medium">CGST ({invoice.gstRate / 2}%):</span>
+                          <span className="font-bold text-orange-600">₹{(invoice.cgst || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500 font-medium">SGST ({invoice.gstRate / 2}%):</span>
+                          <span className="font-bold text-orange-600">₹{(invoice.sgst || 0).toLocaleString('en-IN')}</span>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl text-white shadow-lg overflow-hidden relative">
                     <div className="relative z-10 flex-1 min-w-0">
                       <div className="text-[10px] font-black uppercase opacity-60 tracking-[2px]">Grand Total</div>
-                      <div className="text-xl sm:text-2xl font-black truncate">₹{invoice.totalAmount.toLocaleString('en-IN')}</div>
+                      <div className="text-xl sm:text-2xl font-black truncate">₹{(invoice.totalAmount || 0).toLocaleString('en-IN')}</div>
                     </div>
                     <div className="absolute right-[-20px] bottom-[-20px] opacity-10 rotate-12 bg-white rounded-full w-24 h-24" />
                   </div>

@@ -164,6 +164,36 @@ const EditSalesReturn = () => {
         return;
     }
 
+    // Item Validation
+    for (const item of formData.items) {
+        const name = item.name.trim();
+        if (/^\d+$/.test(name)) {
+            Swal.fire('Error', `Item Name "${name}" cannot be purely numbers`, 'error');
+            return;
+        }
+        if (name.length < 3) {
+             Swal.fire('Error', `Item Name "${name}" must be at least 3 characters long`, 'error');
+             return;
+        }
+    }
+
+    // Party Validation
+    const partyMobile = formData.party.mobile || '';
+    if (!partyMobile) {
+        Swal.fire('Error', 'Customer Mobile Number is required', 'error');
+        return;
+    }
+    if (!/^\d{10}$/.test(partyMobile)) {
+        Swal.fire('Error', 'Invalid Customer Mobile Number (must be 10 digits)', 'error');
+        return;
+    }
+
+    const partyGstin = formData.party.gstin || '';
+    if (partyGstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(partyGstin)) {
+        Swal.fire('Error', 'Invalid GSTIN Format', 'error');
+        return;
+    }
+
     setSaving(true);
     try {
         const payload = {
@@ -286,7 +316,7 @@ const EditSalesReturn = () => {
                       <p className="text-[11px] font-medium text-gray-500 line-clamp-2 pl-12">{formData.party.billingAddress || 'No Address'}</p>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-black uppercase tracking-wider text-gray-400 pl-12">
                         <span>GSTIN: <span className="text-gray-800">{formData.party.gstin || '-'}</span></span>
-                        <span>Mobile: <span className="text-gray-800">{formData.party.phone || '-'}</span></span>
+                        <span>Mobile: <span className="text-gray-800">{formData.party.mobile || '-'}</span></span>
                       </div>
                     </div>
                   </div>
@@ -385,8 +415,9 @@ const EditSalesReturn = () => {
                               <input 
                                 type="number" 
                                 className="w-10 bg-transparent border-none outline-none text-center text-xs font-black text-indigo-600"
-                                value={item.qty}
+                                value={item.qty === 0 ? '' : item.qty}
                                 onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                                placeholder="0"
                               />
                               <span className="text-[9px] text-gray-400 font-bold">{item.unit}</span>
                             </div>
@@ -395,16 +426,18 @@ const EditSalesReturn = () => {
                              <input 
                               type="number" 
                               className="w-full bg-transparent border-none outline-none text-right text-sm font-black text-gray-800"
-                              value={item.rate}
+                              value={item.rate === 0 ? '' : item.rate}
                               onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
                             />
                           </td>
                           <td className="px-2 py-4 text-right">
                              <input 
                               type="number" 
                               className="w-full bg-transparent border-none outline-none text-right text-xs font-bold text-gray-400"
-                              value={item.tax}
+                              value={item.tax === 0 ? '' : item.tax}
                               onChange={(e) => updateItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                              placeholder="0"
                             />
                           </td>
                           <td className="px-4 py-4 text-right font-black text-indigo-600 text-sm">

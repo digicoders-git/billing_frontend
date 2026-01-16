@@ -11,6 +11,13 @@ import {
   Printer, RotateCcw
 } from 'lucide-react';
 
+const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 28% + Cess @ 60%"
+];
+
 const AddPurchaseInvoice = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -23,7 +30,7 @@ const AddPurchaseInvoice = () => {
     paymentTerms: '15',
     supplier: null,
     items: [
-      { id: 1, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, tax: 0, amount: 0 }
+      { id: 1, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', tax: 0, amount: 0 }
     ],
     notes: '',
     terms: '1. Material received in good condition.\n2. Payment will be released as per terms mentioned.',
@@ -69,6 +76,7 @@ const AddPurchaseInvoice = () => {
                         qty: item.qty,
                         rate: item.rate,
                         discount: item.discount,
+                        gstRate: item.gstRate || 'None',
                         tax: item.tax,
                         amount: item.amount
                     })),
@@ -107,14 +115,33 @@ const AddPurchaseInvoice = () => {
       const newItems = prev.items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
-          // Calculate amount: (qty * rate) - discount
+          
+          // Calculate amount: ((qty * rate) - discount) + tax
           const qty = parseFloat(updatedItem.qty) || 0;
           const rate = parseFloat(updatedItem.rate) || 0;
           const discount = parseFloat(updatedItem.discount) || 0;
           
           const baseAmount = qty * rate;
           const discAmount = (baseAmount * discount) / 100;
-          updatedItem.amount = baseAmount - discAmount;
+          const taxableAmount = baseAmount - discAmount;
+
+          // Calculate Tax
+          let taxRate = 0;
+          const rateStr = updatedItem.gstRate || 'None';
+          if (rateStr !== 'None' && rateStr !== 'Exempted') {
+              const matches = rateStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+              if (matches) {
+                  taxRate = matches.reduce((acc, val) => {
+                      const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                      return acc + (isNaN(num) ? 0 : num);
+                  }, 0);
+              }
+          }
+
+          const taxAmount = taxableAmount * (taxRate / 100);
+          updatedItem.tax = taxAmount;
+          updatedItem.amount = taxableAmount + taxAmount;
+          
           return updatedItem;
         }
         return item;
@@ -126,7 +153,7 @@ const AddPurchaseInvoice = () => {
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { id: Date.now(), name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, tax: 0, amount: 0 }]
+      items: [...prev.items, { id: Date.now(), name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', tax: 0, amount: 0 }]
     }));
   };
 
@@ -181,9 +208,10 @@ const AddPurchaseInvoice = () => {
     const totalBeforeRound = taxableAmount - discountVal;
     const roundedTotal = formData.autoRoundOff ? Math.round(totalBeforeRound) : totalBeforeRound;
     const roundOffDiff = (roundedTotal - totalBeforeRound).toFixed(2);
+    const totalTax = formData.items.reduce((sum, item) => sum + (parseFloat(item.tax) || 0), 0);
     const balance = roundedTotal - (parseFloat(formData.amountPaid) || 0);
 
-    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, balance };
+    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, balance, totalTax };
   }, [formData]);
 
   const handleSubmit = async (e) => {
@@ -212,6 +240,7 @@ const AddPurchaseInvoice = () => {
                 unit: item.unit,
                 rate: parseFloat(item.rate) || 0,
                 discount: parseFloat(item.discount) || 0,
+                gstRate: item.gstRate,
                 tax: parseFloat(item.tax) || 0,
                 amount: parseFloat(item.amount) || 0
             })),
@@ -319,8 +348,10 @@ const AddPurchaseInvoice = () => {
               
               {/* Supplier Selection Card */}
               <div className="bg-white rounded-3xl p-1 shadow-sm border border-slate-200/60 hover:shadow-md transition-shadow">
-                <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50/50 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none"></div>
+                <div className="bg-gradient-to-br from-slate-50 to-white rounded-[20px] p-6 relative">
+                    <div className="absolute inset-0 overflow-hidden rounded-[20px] pointer-events-none">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50/50 to-transparent rounded-full -mr-20 -mt-20"></div>
+                    </div>
                     
                     {!formData.supplier ? (
                     <div className="relative max-w-2xl mx-auto py-8 text-center space-y-6">
@@ -416,10 +447,11 @@ const AddPurchaseInvoice = () => {
                     <thead>
                       <tr className="border-b border-slate-100">
                         <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-16 text-center">No.</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[300px]">Item Details</th>
+                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[240px]">Item Details</th>
                         <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-32 text-center">HSN</th>
                         <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-32 text-center">Qty</th>
                         <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-40 text-right">Rate</th>
+                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-48 text-center">GST</th>
                         <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-40 text-right">Amount</th>
                         <th className="py-4 px-6 w-16"></th>
                       </tr>
@@ -464,6 +496,18 @@ const AddPurchaseInvoice = () => {
                               value={item.rate}
                               onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
                             />
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex flex-col items-center">
+                                <select
+                                    value={item.gstRate}
+                                    onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                                    className="w-full min-w-[140px] bg-slate-50 text-xs font-bold text-slate-600 rounded-lg p-2 border-transparent focus:bg-white focus:border-indigo-200 focus:ring-2 focus:ring-indigo-500/10 outline-none text-center"
+                                >
+                                    {gstOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                </select>
+                                <div className="text-[10px] font-bold text-indigo-500 mt-1 bg-indigo-50 px-2 py-0.5 rounded-md">Tax: ₹{item.tax?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                            </div>
                           </td>
                           <td className="py-4 px-6 text-right font-bold text-slate-800">
                              ₹{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -570,7 +614,15 @@ const AddPurchaseInvoice = () => {
                     
                     <div className="space-y-3">
                         <div className="flex justify-between items-center text-sm">
-                            <span className="text-slate-500 font-medium">Subtotal</span>
+                            <span className="text-slate-500 font-medium">Taxable Value</span>
+                            <span className="font-bold text-slate-800">₹{(totals.subtotal - totals.totalTax).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-blue-500 font-bold">Total GST</span>
+                            <span className="font-bold text-blue-600">₹{totals.totalTax.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-slate-500 font-medium">Subtotal (Inc. Tax)</span>
                             <span className="font-bold text-slate-800">₹{totals.subtotal.toLocaleString()}</span>
                         </div>
                          

@@ -687,8 +687,8 @@ const AddDebitNote = () => {
         {/* Vendor Selection Modal */}
         {showPartyDropdown && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-md animate-in fade-in duration-300">
-                <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300">
-                    <div className="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="bg-white w-full max-w-xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300 flex flex-col">
+                    <div className="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
                         <div>
                             <h3 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Vendor Registry</h3>
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-2">Select party for financial audit</p>
@@ -697,7 +697,7 @@ const AddDebitNote = () => {
                             <X size={24} />
                         </button>
                     </div>
-                    <div className="p-10">
+                    <div className="p-10 shrink-0">
                         <div className="relative group">
                             <Search size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-black transition-colors" />
                             <input 
@@ -710,7 +710,7 @@ const AddDebitNote = () => {
                             />
                         </div>
                     </div>
-                    <div className="max-h-[450px] overflow-y-auto px-6 pb-10 custom-scrollbar">
+                    <div className="overflow-y-auto px-6 pb-10 custom-scrollbar flex-1">
                         <div className="grid grid-cols-1 gap-3">
                             {parties.filter(p => {
                                 const term = searchParty.toLowerCase().trim();
@@ -753,8 +753,8 @@ const AddDebitNote = () => {
         {/* Invoice Picker Modal */}
         {showInvoicePicker && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-md animate-in fade-in duration-300">
-                <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300">
-                    <div className="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-in zoom-in-95 duration-300 flex flex-col">
+                    <div className="px-10 py-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
                         <div>
                             <h3 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Purchase Registry</h3>
                             <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[4px] mt-2 italic">Select invoice to auto-load audit items</p>
@@ -763,7 +763,7 @@ const AddDebitNote = () => {
                             <X size={24} />
                         </button>
                     </div>
-                    <div className="max-h-[500px] overflow-y-auto px-6 py-6 custom-scrollbar">
+                    <div className="overflow-y-auto px-6 py-6 custom-scrollbar flex-1">
                         <div className="grid grid-cols-1 gap-4">
                             {filteredPurchases.length > 0 ? filteredPurchases.map(inv => (
                                 <div 

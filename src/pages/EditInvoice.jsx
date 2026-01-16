@@ -4,24 +4,28 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
   Save, Plus, Trash2, User, Calendar, 
   Hash, FileText, ArrowLeft, Settings,
-  ChevronDown, ScanBarcode
+  ChevronDown, ScanBarcode, Search, X
 } from 'lucide-react';
-
-const mockParties = [
-  { id: 1, name: 'ABC Electronics Ltd', address: '123 Business Park, Mumbai', gstin: '27AABCU9603R1ZX', mobile: '9876543210', placeOfSupply: 'Maharashtra' },
-  { id: 2, name: 'XYZ Trading Co', address: '456 Market Street, Delhi', gstin: '07AABCU9603R1ZY', mobile: '9876543211', placeOfSupply: 'Delhi' }
-];
+import api from '../lib/axios';
+import Swal from 'sweetalert2';
 
 const EditInvoice = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
+  const [loading, setLoading] = useState(true);
+  const [parties, setParties] = useState([]);
+  
   const [formData, setFormData] = useState({
     invoiceNo: '',
     date: '',
-    paymentTerms: '30',
+    paymentTerms: '0',
     party: null,
     items: [],
+    gstEnabled: false,
+    gstRate: 18,
+    taxType: 'Exclusive',
+    stateOfSupply: '',
     notes: '',
     terms: '',
     additionalCharges: 0,
@@ -32,34 +36,81 @@ const EditInvoice = () => {
     paymentMethod: 'Cash'
   });
 
+  // Fetch Parties
   useEffect(() => {
-    // Mock loading existing data
-    const existingInvoice = {
-      invoiceNo: 'INV-2024-001',
-      date: '2024-01-15',
-      paymentTerms: '30',
-      party: mockParties[0],
-      items: [
-        { id: 1, name: 'Laptop Computer - Dell Inspiron 15', hsn: '8471', qty: 2, unit: 'PCS', rate: 45000, discount: 5, amount: 85500 },
-        { id: 2, name: 'Wireless Mouse - Logitech MX Master', hsn: '8471', qty: 2, unit: 'PCS', rate: 3500, discount: 0, amount: 7000 }
-      ],
-      notes: 'Thank you for your business!',
-      terms: 'Payment due within 30 days',
-      additionalCharges: 0,
-      overallDiscount: 0,
-      overallDiscountType: 'percentage',
-      autoRoundOff: true,
-      amountReceived: 15000,
-      paymentMethod: 'Cash'
+    const fetchData = async () => {
+      try {
+        const partiesRes = await api.get('/parties');
+        setParties(partiesRes.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     };
-    
-    // Use a small timeout to avoid the synchronous setState warning if it persists
-    const timer = setTimeout(() => {
-      setFormData(existingInvoice);
-    }, 0);
-    
-    return () => clearTimeout(timer);
-  }, [id]);
+    fetchData();
+  }, []);
+
+  // Fetch Invoice Data
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get(`/invoices/${id}`);
+        const invoice = response.data;
+        
+        // Find the party object from parties list, or create from invoice data
+        let partyObj = parties.find(p => p._id === invoice.party);
+        
+        // If party not found in list, create object from invoice's stored party data
+        if (!partyObj && invoice.partyName) {
+          partyObj = {
+            _id: invoice.party,
+            name: invoice.partyName,
+            billingAddress: invoice.billingAddress,
+            gstin: invoice.party?.gstin || 'N/A',
+            mobile: invoice.party?.mobile || 'N/A',
+            type: invoice.party?.type || 'Customer'
+          };
+        }
+        
+        setFormData({
+          invoiceNo: invoice.invoiceNo || '',
+          date: invoice.date ? new Date(invoice.date).toISOString().split('T')[0] : '',
+          paymentTerms: invoice.paymentTerms?.toString() || '0',
+          party: partyObj || null,
+          items: (invoice.items || []).map((item, index) => ({
+            ...item,
+            id: item._id || `item-${Date.now()}-${index}` // Ensure each item has a unique id
+          })),
+          gstEnabled: invoice.gstEnabled || false,
+          gstRate: invoice.gstRate || 18,
+          taxType: invoice.taxType || 'Exclusive',
+          stateOfSupply: invoice.stateOfSupply || '',
+          notes: invoice.notes || '',
+          terms: invoice.terms || '',
+          additionalCharges: invoice.additionalCharges || 0,
+          overallDiscount: invoice.overallDiscount || 0,
+          overallDiscountType: invoice.overallDiscountType || 'percentage',
+          autoRoundOff: invoice.autoRoundOff !== undefined ? invoice.autoRoundOff : true,
+          amountReceived: invoice.amountReceived || 0,
+          paymentMethod: invoice.paymentMethod || 'Cash'
+        });
+      } catch (error) {
+        console.error('Error fetching invoice:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load invoice details',
+        });
+        navigate('/invoices');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id && parties.length > 0) {
+      fetchInvoice();
+    }
+  }, [id, navigate, parties]);
 
   const dueDate = useMemo(() => {
     if (!formData.date) return '';
@@ -117,28 +168,107 @@ const EditInvoice = () => {
     return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, balance };
   }, [formData]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/invoices');
+    
+    if (!formData.party) {
+      Swal.fire('Error', 'Please select a party first!', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        invoiceNo: formData.invoiceNo,
+        date: formData.date,
+        paymentTerms: formData.paymentTerms,
+        party: formData.party._id,
+        partyName: formData.party.name,
+        billingAddress: formData.party.billingAddress,
+        stateOfSupply: formData.stateOfSupply,
+        
+        gstEnabled: formData.gstEnabled,
+        gstRate: parseFloat(formData.gstRate) || 0,
+        taxType: formData.taxType,
+        
+        items: formData.items.map(item => ({
+          itemId: item.itemId,
+          name: item.name,
+          hsn: item.hsn,
+          qty: parseFloat(item.qty),
+          unit: item.unit,
+          rate: parseFloat(item.rate),
+          discount: parseFloat(item.discount),
+          tax: parseFloat(item.tax || 0),
+          amount: parseFloat(item.amount)
+        })),
+        
+        subtotal: totals.subtotal,
+        taxableAmount: totals.taxableAmount,
+        totalAmount: totals.roundedTotal,
+        roundOffDiff: parseFloat(totals.roundOffDiff),
+        
+        additionalCharges: parseFloat(formData.additionalCharges) || 0,
+        overallDiscount: parseFloat(formData.overallDiscount) || 0,
+        overallDiscountType: formData.overallDiscountType,
+        autoRoundOff: formData.autoRoundOff,
+        amountReceived: parseFloat(formData.amountReceived) || 0,
+        balanceAmount: totals.balance,
+        paymentMethod: formData.paymentMethod,
+        status: totals.balance <= 0 ? 'Paid' : (totals.balance < totals.roundedTotal ? 'Partial' : 'Unpaid'),
+        
+        notes: formData.notes,
+        terms: formData.terms
+      };
+
+      await api.put(`/invoices/${id}`, payload);
+      Swal.fire({
+        title: 'Success!',
+        text: 'Invoice updated successfully',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      navigate('/invoices');
+    } catch (error) {
+      console.error('Error updating invoice:', error);
+      Swal.fire('Error', error.response?.data?.message || 'Failed to update invoice', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 font-medium">Loading invoice...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50/50 pb-20">
-        {/* Top Sticky Header */}
-        <div className="sticky top-16 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
+        {/* Top Header */}
+        <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm mb-6 sticky top-0 z-20">
           <div className="flex items-center gap-2 sm:gap-4 overflow-hidden">
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600 shrink-0">
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-sm sm:text-xl font-semibold text-gray-800 truncate">Edit Invoice</h1>
+            <h1 className="text-sm sm:text-xl font-bold text-gray-800 truncate uppercase tracking-tight">Edit Invoice</h1>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center  gap-1.5 sm:gap-3">
             <button 
               onClick={handleSubmit}
-              className="px-4 sm:px-6 py-1.5 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-bold hover:bg-blue-700 shadow-md transition-all"
+              className="px-6 sm:px-8 py-2 bg-black text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-800 shadow-lg shadow-black/20 transition-all uppercase tracking-widest"
             >
-              Update
+              Update Invoice
             </button>
           </div>
         </div>
@@ -156,14 +286,12 @@ const EditInvoice = () => {
                         <div className="p-1.5 bg-blue-100 text-blue-600 rounded-lg shrink-0"><User size={20} /></div>
                         <h2 className="text-base sm:text-lg font-black text-gray-900 truncate">{formData.party.name}</h2>
                       </div>
-                      <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{formData.party.address}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 line-clamp-2">{formData.party.billingAddress || 'No address provided'}</p>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                        <span>GSTIN: <span className="text-gray-700">{formData.party.gstin}</span></span>
-                        <span>Mobile: <span className="text-gray-700">{formData.party.mobile}</span></span>
+                        <span>GSTIN: <span className="text-gray-700">{formData.party.gstin || 'N/A'}</span></span>
+                        <span>Mobile: <span className="text-gray-700">{formData.party.mobile || 'N/A'}</span></span>
+                        <span>Type: <span className="text-gray-700">{formData.party.type || 'N/A'}</span></span>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                       <span className="text-[9px] sm:text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded uppercase tracking-widest">{formData.party.placeOfSupply}</span>
                     </div>
                   </div>
                 )}

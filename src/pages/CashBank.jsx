@@ -321,7 +321,7 @@ const CashBank = () => {
                                       )}
                                   </td>
                                   <td className={`px-6 py-4 text-right font-bold text-sm tabular-nums italic ${acc.openingBalance < 0 ? 'text-red-500' : 'text-gray-900'}`}>
-                                      ₹{acc.openingBalance.toLocaleString()}
+                                      ₹{(acc.openingBalance || 0).toLocaleString()}
                                   </td>
                                   <td className="px-6 py-4 text-center">
                                       <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

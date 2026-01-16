@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
     ArrowLeft, Settings, Save, HelpCircle, 
@@ -10,6 +10,9 @@ import Swal from 'sweetalert2';
 
 const AddParty = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo'); // Get return URL from query params
+  
   const [showBankModal, setShowBankModal] = useState(false);
   const [bankAccountForm, setBankAccountForm] = useState({
     accountNo: '',
@@ -56,9 +59,22 @@ const AddParty = () => {
     }
     setLoading(true);
     try {
-        await api.post('/parties', formData);
+        const response = await api.post('/parties', formData);
+        const createdParty = response.data;
+        
+        // Store newly created party in localStorage for other pages to use
+        if (returnTo) {
+            localStorage.setItem('newlyCreatedParty', JSON.stringify(createdParty));
+        }
+        
         Swal.fire('Success', 'Party created successfully', 'success');
-        navigate('/parties');
+        
+        // Navigate back to the return URL or default to parties page
+        if (returnTo) {
+            navigate(returnTo);
+        } else {
+            navigate('/parties');
+        }
     } catch (error) {
         console.error('Error creating party:', error);
         Swal.fire('Error', error.response?.data?.message || 'Failed to create party', 'error');
@@ -181,7 +197,7 @@ const AddParty = () => {
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
                             <input 
                                 type="number" 
-                                value={formData.openingBalance}
+                                value={formData.openingBalance === 0 ? '' : formData.openingBalance}
                                 onChange={(e) => handleChange('openingBalance', e.target.value)}
                                 className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder-gray-400 border-r-0"
                                 placeholder="0"
@@ -337,9 +353,10 @@ const AddParty = () => {
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
                         <input 
                             type="number"
-                            value={formData.creditLimit}
+                            value={formData.creditLimit === 0 ? '' : formData.creditLimit}
                             onChange={(e) => handleChange('creditLimit', e.target.value)}
                             className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent outline-none transition-all"
+                            placeholder="0"
                         />
                     </div>
                  </div>

@@ -139,27 +139,39 @@ const ViewPurchaseOrder = () => {
              <div ref={componentRef} className="bg-white shadow-2xl rounded-[40px] overflow-hidden print:shadow-none print:rounded-none print:overflow-visible print:w-full border border-gray-50 flex flex-col min-h-[1200px]">
                  
                  {/* Print Header */}
-                 <div className="p-12 border-b-8 border-gray-900 bg-[#FDFDFF] flex flex-col md:flex-row justify-between items-start gap-12 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50/50 rounded-full -mr-32 -mt-32 " />
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-6 mb-8">
-                            <div className="w-20 h-20 bg-gray-900 rounded-[28px] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(0,0,0,0.15)] group">
-                                <ScanBarcode size={40} className="group-hover:scale-110 transition-transform duration-500" />
+                 <div className="p-8 border-b border-gray-200 flex flex-col md:flex-row justify-between gap-8">
+                    {/* Company Info Left */}
+                    <div className="flex gap-4">
+                        <div className="w-16 h-16 border-2 border-yellow-500 rounded-full flex items-center justify-center p-0.5 shrink-0">
+                            <div className="w-full h-full bg-black rounded-full flex flex-col items-center justify-center text-white overflow-hidden p-0.5">
+                                <div className="text-[8px] font-black leading-none">FAIZAN</div>
+                                <div className="text-[5px] opacity-70">AQUACULTURE</div>
                             </div>
-                            <div className="flex flex-col">
-                                <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic">Purchase Order</h1>
-                                <p className="text-[10px] font-black text-indigo-500 bg-indigo-50/50 px-4 py-1.5 rounded-full uppercase tracking-[4px] inline-block mt-3 border border-indigo-100/50">Procurement Indent Registry</p>
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-black leading-tight mb-1 text-black">FAIZAN MACHINERY & AQUA CULTURE</h1>
+                            <p className="text-[9px] leading-tight mb-1 font-medium text-gray-600">BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192</p>
+                            <div className="grid grid-cols-2 text-[9px] font-medium text-gray-600">
+                                <div><strong>GSTIN:</strong> 09DWAPK9067Q1ZJ</div>
+                                <div><strong>Mobile:</strong> 9839280238</div>
+                                <div><strong>PAN:</strong> DWAPK9069Q</div>
                             </div>
+                            <div className="text-[9px] font-medium text-gray-600"><strong>Email:</strong> fmaaquaculture@gmail.com</div>
                         </div>
                     </div>
-                    <div className="text-left md:text-right w-full md:w-auto relative z-10 space-y-4">
-                        <div className="inline-block px-6 py-3 bg-gray-900 text-white rounded-[20px] shadow-2xl shadow-indigo-100/20">
-                            <div className="text-2xl font-black italic tracking-widest uppercase mb-0.5">#{orderData.orderNo}</div>
+
+                    {/* PO Details Right */}
+                    <div className="text-left md:text-right">
+                        <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-1">Purchase Order</h1>
+                        <p className="text-xs text-indigo-600 font-bold mb-4 uppercase tracking-widest">{orderData.status}</p>
+                        
+                        <div className="inline-block px-4 py-2 bg-gray-900 text-white rounded-lg shadow-sm mb-2">
+                             <div className="text-lg font-black tracking-widest uppercase">#{orderData.orderNo}</div>
                         </div>
-                        <div className="space-y-2">
-                            <p className="text-[11px] text-gray-400 font-black uppercase tracking-[4px] italic">INDENT DATE: <span className="text-gray-900 not-italic ml-2">{new Date(orderData.date).toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'})}</span></p>
+                        <div className="space-y-1 text-xs text-gray-500 font-medium">
+                            <p>Date: <span className="text-gray-900 font-bold">{new Date(orderData.date).toLocaleDateString('en-GB')}</span></p>
                             {orderData.expiryDate && (
-                                <p className="text-[11px] text-rose-400 font-black uppercase tracking-[4px] italic">EXPIRY AUDIT: <span className="not-italic ml-2">{new Date(orderData.expiryDate).toLocaleDateString('en-IN', {day:'2-digit', month:'long', year:'numeric'})}</span></p>
+                                <p className="text-rose-500">Expires: {new Date(orderData.expiryDate).toLocaleDateString('en-GB')}</p>
                             )}
                         </div>
                     </div>
@@ -314,7 +326,7 @@ const ViewPurchaseOrder = () => {
                                   <div className="w-48 h-px bg-white/10" />
                                   <div className="flex flex-col items-center">
                                       <p className="text-[10px] font-black text-white/40 uppercase tracking-[5px] italic">PROCUREMENT AUDIT SEAL</p>
-                                      <p className="text-[10px] font-bold text-indigo-500/50 uppercase mt-2">AUTHORIZED SIGNATORY REGISTRY</p>
+                                      <p className="text-[10px] font-bold text-indigo-500/50 uppercase mt-2">For FAIZAN MACHINERY & AQUA CULTURE</p>
                                   </div>
                               </div>
                          </div>

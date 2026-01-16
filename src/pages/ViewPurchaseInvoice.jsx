@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { ArrowLeft, Edit, FileText, Calendar, User, Building, Printer, Truck, Hash } from 'lucide-react';
 import api from '../lib/axios';
+import PurchaseInvoicePrint from '../components/invoices/PurchaseInvoicePrint';
+
 
 const ViewPurchaseInvoice = () => {
   const { id } = useParams();
@@ -11,6 +13,8 @@ const ViewPurchaseInvoice = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  // ... (existing useEffect) ...
+
     const fetchInvoice = async () => {
       try {
         const response = await api.get(`/purchases/${id}`);
@@ -73,11 +77,11 @@ const ViewPurchaseInvoice = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 font-sans pb-20">
+      <div className="p-4 sm:p-6 lg:p-8 font-sans pb-20 print:hidden">
         <div className="max-w-5xl mx-auto space-y-8">
           
           {/* Header Action Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
             <div className="flex items-center gap-4">
                 <button 
                     onClick={() => navigate(-1)} 
@@ -279,6 +283,10 @@ const ViewPurchaseInvoice = () => {
 
           </div>
         </div>
+      </div>
+
+      <div className="hidden print:block font-sans bg-white p-0 m-0 w-full absolute inset-0 z-50">
+          <PurchaseInvoicePrint invoice={invoice} />
       </div>
     </DashboardLayout>
   );

@@ -92,7 +92,7 @@ const ExpensePDF = () => {
     // Static Company Info
     const company = {
         name: 'FAIZAN MACHINERY & AQUA CULTURE',
-        address: 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, Siddharthnagar, Uttar Pradesh, 272192',
+        address: 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192',
         gstin: '09DWAPK9067Q1ZJ',
         mobile: '9839280238',
         pan: 'DWAPK9069Q',
@@ -126,7 +126,7 @@ const ExpensePDF = () => {
             'Maintain for audit purposes.'
         ],
         bank: {
-            name: 'FAIZAN MACHINERY AND AQUACULTURE',
+             name: 'FAIZAN MACHINERY & AQUA CULTURE',
             ifsc: 'HDFC0005168',
             accountNo: '50200073192648',
             bankName: 'HDFC Bank, ITWA'
