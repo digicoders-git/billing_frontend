@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
     ArrowLeft, Settings, Save, HelpCircle, 
-    Landmark, Plus, ChevronDown, X, Trash2, Edit
+    Landmark, Plus, ChevronDown, X, Trash2, Edit, Tag, Check
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
@@ -40,9 +40,108 @@ const AddParty = () => {
     contactPerson: '',
     dob: '',
     bankAccount: null, // Stores bankAccountForm object after submission
+    placeOfSupply: '',
     customFieldCategory: '',
     customFieldValue: ''
   });
+
+  const [categories, setCategories] = useState([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+
+  // Fetch categories
+  React.useEffect(() => {
+    const fetchCategories = async () => {
+        try {
+            const response = await api.get('/party-categories');
+            setCategories(response.data);
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    
+    setCategoryLoading(true);
+    try {
+        const response = await api.post('/party-categories', { name: newCategoryName.trim() });
+        setCategories(prev => [...prev, response.data].sort((a, b) => a.name.localeCompare(b.name)));
+        setFormData(prev => ({ ...prev, category: response.data.name }));
+        setNewCategoryName('');
+        setShowAddCategory(false);
+        Swal.fire({
+            title: 'Success',
+            text: 'Category added successfully',
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    } catch (error) {
+        console.error('Error creating category:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Failed to create category', 'error');
+    } finally {
+        setCategoryLoading(false);
+    }
+  };
+
+  const handleUpdateCategory = async (id, name) => {
+    if (!name.trim()) return;
+    setCategoryLoading(true);
+    try {
+        const response = await api.put(`/party-categories/${id}`, { name: name.trim() });
+        setCategories(prev => prev.map(cat => cat._id === id ? response.data : cat));
+        setEditingCategoryId(null);
+        setNewCategoryName('');
+        Swal.fire({
+            title: 'Updated',
+            text: 'Category updated successfully',
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    } catch (error) {
+        console.error('Error updating category:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Failed to update category', 'error');
+    } finally {
+        setCategoryLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: "Categories assigned to parties won't be cleared, but this category will be removed from the list.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+        setCategoryLoading(true);
+        try {
+            await api.delete(`/party-categories/${id}`);
+            setCategories(prev => prev.filter(cat => cat._id !== id));
+            Swal.fire('Deleted!', 'Category has been removed.', 'success');
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            Swal.fire('Error', 'Failed to delete category', 'error');
+        } finally {
+            setCategoryLoading(false);
+        }
+    }
+  };
 
   const [sameAsBilling, setSameAsBilling] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -106,6 +205,7 @@ const AddParty = () => {
             gstin: '', pan: '', type: 'Customer', category: '', billingAddress: '',
             shippingAddress: '', creditPeriod: 30, creditLimit: 0,
             contactPerson: '', dob: '', bankAccount: null,
+            placeOfSupply: '',
             customFieldCategory: '', customFieldValue: ''
           });
           setSameAsBilling(false);
@@ -262,17 +362,28 @@ const AddParty = () => {
                 </div>
                 <div>
                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Party Category</label>
-                     <div className="relative">
-                        <select 
-                            value={formData.category}
-                            onChange={(e) => handleChange('category', e.target.value)}
-                            className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent outline-none transition-all bg-white cursor-pointer text-gray-500"
+                     <div className="flex gap-2">
+                         <div className="relative flex-1">
+                            <select 
+                                value={formData.category}
+                                onChange={(e) => handleChange('category', e.target.value)}
+                                className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-white cursor-pointer pr-10"
+                            >
+                                <option value="">Select Category</option>
+                                {categories.map(cat => (
+                                    <option key={cat._id} value={cat.name}>{cat.name}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                         </div>
+                         <button 
+                            type="button"
+                            onClick={() => setShowAddCategory(true)}
+                            className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all flex items-center justify-center shrink-0"
+                            title="Add New Category"
                         >
-                            <option value="">Select Category</option>
-                            <option value="retail">Retail</option>
-                            <option value="wholesale">Wholesale</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                            <Plus size={18} />
+                        </button>
                      </div>
                 </div>
             </div>
@@ -319,6 +430,56 @@ const AddParty = () => {
                         className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent outline-none transition-all placeholder-gray-400 resize-none ${sameAsBilling ? 'bg-gray-50' : ''}`}
                         placeholder="Enter shipping address"
                     />
+                </div>
+            </div>
+
+            <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Place of Supply (State)</label>
+                <div className="relative">
+                    <select 
+                        value={formData.placeOfSupply}
+                        onChange={(e) => handleChange('placeOfSupply', e.target.value)}
+                        className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all bg-white cursor-pointer"
+                    >
+                        <option value="">Select State</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                        <option value="Assam">Assam</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Chhattisgarh">Chhattisgarh</option>
+                        <option value="Goa">Goa</option>
+                        <option value="Gujarat">Gujarat</option>
+                        <option value="Haryana">Haryana</option>
+                        <option value="Himachal Pradesh">Himachal Pradesh</option>
+                        <option value="Jharkhand">Jharkhand</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Kerala">Kerala</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Manipur">Manipur</option>
+                        <option value="Meghalaya">Meghalaya</option>
+                        <option value="Mizoram">Mizoram</option>
+                        <option value="Nagaland">Nagaland</option>
+                        <option value="Odisha">Odisha</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Rajasthan">Rajasthan</option>
+                        <option value="Sikkim">Sikkim</option>
+                        <option value="Tamil Nadu">Tamil Nadu</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="Tripura">Tripura</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                        <option value="Uttarakhand">Uttarakhand</option>
+                        <option value="West Bengal">West Bengal</option>
+                        <option value="Delhi">Delhi</option>
+                        <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                        <option value="Chandigarh">Chandigarh</option>
+                        <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                        <option value="Lakshadweep">Lakshadweep</option>
+                        <option value="Puducherry">Puducherry</option>
+                        <option value="Ladakh">Ladakh</option>
+                        <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
                 </div>
             </div>
         </div>
@@ -579,6 +740,129 @@ const AddParty = () => {
               <HelpCircle size={20} />
           </button>
       </div>
+
+       {/* Manage Category Modal */}
+       {showAddCategory && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Tag size={20} className="text-blue-600" />
+                Manage Categories
+              </h3>
+              <button 
+                onClick={() => {
+                    setShowAddCategory(false);
+                    setEditingCategoryId(null);
+                    setNewCategoryName('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+                type="button"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+                 {/* Add/Edit Form */}
+                 <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (editingCategoryId) {
+                            handleUpdateCategory(editingCategoryId, newCategoryName);
+                        } else {
+                            handleCreateCategory(e);
+                        }
+                    }} 
+                    className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100"
+                >
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+                        {editingCategoryId ? 'Edit Category' : 'Create New Category'}
+                    </label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            autoFocus
+                            required
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-black transition-all outline-none text-sm"
+                            placeholder="Enter category name..."
+                        />
+                        <button 
+                            type="submit"
+                            disabled={categoryLoading}
+                            className={`px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${editingCategoryId ? 'bg-green-600 hover:bg-green-700' : 'bg-black hover:bg-gray-800'} text-white shadow-sm`}
+                        >
+                            {categoryLoading ? '...' : editingCategoryId ? <Check size={16} /> : <Plus size={16} />}
+                        </button>
+                        {editingCategoryId && (
+                             <button 
+                                type="button"
+                                onClick={() => {
+                                    setEditingCategoryId(null);
+                                    setNewCategoryName('');
+                                }}
+                                className="p-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-all"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+                </form>
+
+                {/* Categories List */}
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Existing Categories ({categories.length})</p>
+                    {categories.length === 0 ? (
+                        <div className="text-center py-8 text-gray-400 italic text-sm">No categories found</div>
+                    ) : (
+                        categories.map((cat) => (
+                            <div key={cat._id} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-blue-100 hover:bg-blue-50/30 transition-all group">
+                                <span className="text-sm font-medium text-gray-700">{cat.name}</span>
+                                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => {
+                                            setEditingCategoryId(cat._id);
+                                            setNewCategoryName(cat.name);
+                                        }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                                        title="Edit"
+                                        type="button"
+                                    >
+                                        <Edit size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteCategory(cat._id)}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                        title="Delete"
+                                        type="button"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button 
+                    type="button"
+                    onClick={() => {
+                        setShowAddCategory(false);
+                        setEditingCategoryId(null);
+                        setNewCategoryName('');
+                    }}
+                    className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                    Close
+                </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

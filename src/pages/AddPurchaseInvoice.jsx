@@ -8,8 +8,9 @@ import {
   Hash, FileText, Settings, Keyboard, 
   ArrowLeft, Search, ScanBarcode, X,
   ChevronDown, ShoppingCart, Truck,
-  Printer, RotateCcw
+  Printer, RotateCcw, Receipt
 } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 const gstOptions = [
     "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
@@ -45,17 +46,29 @@ const AddPurchaseInvoice = () => {
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [searchSupplier, setSearchSupplier] = useState('');
   const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  
+  // Item Picker State
+  const [showItemPicker, setShowItemPicker] = useState(false);
+  const [pickerSearchTerm, setPickerSearchTerm] = useState('');
+  const [activeItemIndex, setActiveItemIndex] = useState(null);
+  const [allItems, setAllItems] = useState([]);
 
+  // Fetch Suppliers & Items
   useEffect(() => {
-    const fetchSuppliers = async () => {
+    const fetchData = async () => {
         try {
-            const res = await api.get('/parties');
-            setSuppliers(res.data);
+            const [suppliersRes, itemsRes] = await Promise.all([
+                api.get('/parties'),
+                api.get('/items')
+            ]);
+            setSuppliers(suppliersRes.data);
+            setAllItems(itemsRes.data);
         } catch (error) {
-            console.error("Failed to fetch suppliers", error);
+            console.error('Error fetching data:', error);
+            Swal.fire('Error', 'Failed to fetch required data', 'error');
         }
     };
-    fetchSuppliers();
+    fetchData();
   }, []);
 
   // Fetch Purchase Data if in Edit Mode
@@ -150,6 +163,44 @@ const AddPurchaseInvoice = () => {
     });
   };
 
+  const selectItem = (itemData) => {
+      if (activeItemIndex === null) return;
+      
+      setFormData(prev => {
+          const newItems = [...prev.items];
+          // Determine GST Percent from string
+          const gstStr = itemData.gstRate || 'None';
+          let gstPercent = 0;
+          if (gstStr.includes('@')) {
+              gstPercent = parseFloat(gstStr.split('@')[1]) || 0;
+          }
+
+          const rate = itemData.purchasePrice || 0;
+          const qty = newItems[activeItemIndex].qty || 1;
+          const taxableAmount = rate * qty;
+          const taxAmount = (taxableAmount * gstPercent) / 100;
+
+          newItems[activeItemIndex] = {
+              ...newItems[activeItemIndex],
+              itemId: itemData._id,
+              name: itemData.name,
+              code: itemData.code,
+              hsn: itemData.hsn || '',
+              mrp: itemData.mrp || 0,
+              rate: rate,
+              discount: 0,
+              unit: itemData.unit || 'PCS',
+              gstRate: gstStr,
+              tax: taxAmount,
+              amount: taxableAmount + taxAmount
+          };
+          return { ...prev, items: newItems };
+      });
+      setShowItemPicker(false);
+      setPickerSearchTerm('');
+      setActiveItemIndex(null);
+  };
+
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
@@ -233,17 +284,27 @@ const AddPurchaseInvoice = () => {
             date: formData.date,
             party: formData.supplier._id,
             partyName: formData.supplier.name,
-            items: formData.items.map(item => ({
-                name: item.name,
-                hsn: item.hsn,
-                qty: parseFloat(item.qty) || 0,
-                unit: item.unit,
-                rate: parseFloat(item.rate) || 0,
-                discount: parseFloat(item.discount) || 0,
-                gstRate: item.gstRate,
-                tax: parseFloat(item.tax) || 0,
-                amount: parseFloat(item.amount) || 0
-            })),
+          items: formData.items.map(item => {
+              // Parse GST Rate (e.g., "GST @ 18%" -> 18)
+              const rateStr = item.gstRate || 'None';
+              let gstNum = 0;
+              if (rateStr && rateStr.includes('@')) {
+                  gstNum = parseFloat(rateStr.split('@')[1]) || 0;
+              }
+
+              return {
+                  name: item.name,
+                  hsn: item.hsn,
+                  qty: parseFloat(item.qty) || 0,
+                  unit: item.unit,
+                  mrp: parseFloat(item.mrp) || 0,
+                  rate: parseFloat(item.rate) || 0,
+                  discount: parseFloat(item.discount) || 0,
+                  gstRate: gstNum,
+                  tax: parseFloat(item.tax) || 0,
+                  amount: parseFloat(item.amount) || 0
+              };
+          }),
             subtotal: totals.subtotal,
             additionalCharges: parseFloat(formData.additionalCharges) || 0,
             overallDiscount: totals.discountVal,
@@ -434,104 +495,170 @@ const AddPurchaseInvoice = () => {
               </div>
 
               {/* Items Table Card */}
+              {/* Items Table Card */}
               <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col min-h-[400px]">
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-                    <h3 className="font-bold text-lg text-slate-800">Items & Breakdown</h3>
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        <span>{formData.items.length} Entries</span>
+                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <h3 className="font-bold text-xl text-slate-800">Items & Breakdown</h3>
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full border border-slate-200">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">{formData.items.length} Entries</span>
                     </div>
                 </div>
                 
                 <div className="flex-1 overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  <table className="w-full text-left border-collapse min-w-[1200px]">
                     <thead>
-                      <tr className="border-b border-slate-100">
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-16 text-center">No.</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[240px]">Item Details</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-32 text-center">HSN</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-32 text-center">Qty</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-40 text-right">Rate</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-48 text-center">GST</th>
-                        <th className="py-4 px-6 text-xs font-bold text-slate-400 uppercase tracking-wider w-40 text-right">Amount</th>
-                        <th className="py-4 px-6 w-16"></th>
+                      <tr className="border-b border-slate-200 bg-slate-50/50">
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-16 text-center">No.</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest min-w-[300px]">Item Details</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-28 text-center">HSN</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-28 text-center">MRP</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-32 text-center">Qty / Unit</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-36 text-right">Rate (₹)</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-24 text-center">Disc%</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-44 text-center">GST Selection</th>
+                        <th className="py-5 px-4 text-[11px] font-black text-slate-400 uppercase tracking-widest w-40 text-right">Amount</th>
+                        <th className="py-5 px-4 w-16"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-50">
+                    <tbody className="divide-y divide-slate-100">
                       {formData.items.map((item, index) => (
-                        <tr key={item.id} className="group hover:bg-indigo-50/30 transition-colors">
-                          <td className="py-4 px-6 text-center text-sm font-bold text-slate-400">{index + 1}</td>
-                          <td className="py-4 px-6">
-                            <input 
-                              type="text" 
-                              className="w-full bg-transparent border-none p-0 text-slate-800 font-bold placeholder:text-slate-300 focus:ring-0"
-                              placeholder="Enter item name..."
-                              value={item.name}
-                              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                            />
+                        <tr key={item.id} className="group hover:bg-slate-50/60 transition-colors duration-200">
+                          <td className="py-4 px-4 text-center">
+                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 text-xs font-bold mx-auto">
+                                {index + 1}
+                            </span>
                           </td>
-                          <td className="py-4 px-6">
+                          <td className="py-4 px-4">
+                            <div 
+                              className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:ring-4 hover:ring-indigo-500/5 transition-all shadow-sm"
+                              onClick={() => {
+                                setActiveItemIndex(index);
+                                setShowItemPicker(true);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                  <span className={cn("text-sm font-bold truncate", item.name ? "text-slate-800" : "text-slate-400 italic")}>
+                                    {item.name || "Click to select product..."}
+                                  </span>
+                                  {item.code && <span className="text-[10px] font-semibold text-slate-400">Code: {item.code}</span>}
+                              </div>
+                              <Search size={16} className="text-indigo-400" />
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
                             <input 
                               type="text" 
-                              className="w-full bg-slate-50 rounded-lg border-transparent text-center text-sm font-semibold text-slate-600 focus:bg-white focus:border-indigo-200 focus:ring-2 focus:ring-indigo-500/10 transition-all"
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-center text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300 shadow-sm"
                               placeholder="HSN"
                               value={item.hsn}
                               onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
                             />
                           </td>
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-1 border border-transparent group-hover:border-slate-200 transition-all">
+                          <td className="py-4 px-4">
+                            <input 
+                              type="number" 
+                              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-center text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300 shadow-sm"
+                              placeholder="0"
+                              value={item.mrp || 0}
+                              onChange={(e) => updateItem(item.id, 'mrp', e.target.value)}
+                            />
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/10 transition-all">
                                 <input 
                                     type="number" 
-                                    className="w-full bg-transparent border-none text-center font-bold text-slate-700 p-0 focus:ring-0"
+                                    className="w-full min-w-0 bg-transparent border-none text-center font-bold text-slate-800 p-2.5 outline-none"
                                     value={item.qty}
                                     onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
                                 />
-                                <span className="text-[10px] font-bold text-slate-400 uppercase pr-2">{item.unit}</span>
+                                <div className="bg-slate-50 border-l border-slate-100 px-2 flex items-center justify-center">
+                                    <span className="text-[10px] font-black text-slate-500 uppercase">{item.unit}</span>
+                                </div>
                             </div>
                           </td>
-                          <td className="py-4 px-6 text-right">
-                            <input 
-                              type="number" 
-                              className="w-full text-right bg-transparent border-none p-0 font-bold text-slate-700 focus:ring-0"
-                              value={item.rate}
-                              onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
-                            />
+                          <td className="py-4 px-4">
+                             <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                                <input 
+                                  type="number" 
+                                  className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3 py-2.5 text-right text-sm font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm"
+                                  value={item.rate}
+                                  onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
+                                />
+                             </div>
                           </td>
-                          <td className="py-4 px-6">
-                            <div className="flex flex-col items-center">
-                                <select
-                                    value={item.gstRate}
-                                    onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
-                                    className="w-full min-w-[140px] bg-slate-50 text-xs font-bold text-slate-600 rounded-lg p-2 border-transparent focus:bg-white focus:border-indigo-200 focus:ring-2 focus:ring-indigo-500/10 outline-none text-center"
-                                >
-                                    {gstOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-                                </select>
-                                <div className="text-[10px] font-bold text-indigo-500 mt-1 bg-indigo-50 px-2 py-0.5 rounded-md">Tax: ₹{item.tax?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                          <td className="py-4 px-4">
+                            <div className="relative">
+                                <input 
+                                type="number" 
+                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-center text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-300 shadow-sm"
+                                placeholder="0"
+                                value={item.discount}
+                                onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs font-bold">%</span>
                             </div>
                           </td>
-                          <td className="py-4 px-6 text-right font-bold text-slate-800">
-                             ₹{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="relative">
+                                    <select
+                                        value={item.gstRate}
+                                        onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                                        className="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3 py-2.5 pr-8 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all shadow-sm cursor-pointer"
+                                    >
+                                        {gstOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+                                {item.tax > 0 && (
+                                    <div className="flex justify-between items-center px-2">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Tax Amt</span>
+                                        <span className="text-[10px] font-bold text-indigo-600">₹{item.tax?.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                )}
+                            </div>
                           </td>
-                          <td className="py-4 px-6 text-center">
+                          <td className="py-4 px-4 text-right">
+                             <div className="flex flex-col items-end">
+                                <span className={cn("text-sm font-black", item.amount > 0 ? "text-slate-800" : "text-slate-300")}>
+                                    ₹{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                             </div>
+                          </td>
+                          <td className="py-4 px-4 text-center">
                              <button 
                                 onClick={() => removeItem(item.id)}
-                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                className="p-2.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100 border border-transparent transition-all opacity-0 group-hover:opacity-100 transform active:scale-95"
+                                title="Remove Item"
                              >
-                                <Trash2 size={16} />
+                                <Trash2 size={18} />
                              </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  
+                  {formData.items.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <ShoppingCart size={32} className="text-slate-300" />
+                        </div>
+                        <h3 className="text-slate-500 font-medium">No items added yet</h3>
+                        <p className="text-slate-400 text-sm">Start by adding a product row above</p>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div className="p-4 border-t border-slate-100 bg-slate-50">
                     <button 
                         onClick={addItem}
-                        className="flex items-center gap-2 text-indigo-600 text-sm font-bold px-4 py-2 rounded-lg hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition-all"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 text-indigo-600 text-sm font-bold px-6 py-3 rounded-xl bg-white border border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm active:scale-95"
                     >
-                        <Plus size={18} /> Add Breakdown Row
+                        <Plus size={18} /> 
+                        <span>Add New Entry Row</span>
                     </button>
                 </div>
               </div>
@@ -708,9 +835,84 @@ const AddPurchaseInvoice = () => {
                 </div>
 
             </div>
+      </div>
+      </div>
+      </div>
+      {/* Item Picker Modal */}
+      {showItemPicker && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+             <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50 bg-gray-50/50">
+                <div className="text-left">
+                  <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Select Purchase Product</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Pick an item from your inventory</p>
+                </div>
+                <button onClick={() => setShowItemPicker(false)} className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 transition-colors"><X size={20} /></button>
+             </div>
+             
+             <div className="p-6 space-y-4">
+                {/* Search Bar */}
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-black transition-colors" size={18} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by name or code..."
+                    className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl outline-none focus:ring-2 focus:ring-black focus:bg-white font-bold transition-all"
+                    value={pickerSearchTerm}
+                    onChange={(e) => setPickerSearchTerm(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                {/* Item List */}
+                <div className="max-h-[50vh] overflow-y-auto custom-scrollbar divide-y divide-gray-50 text-left">
+                  {allItems
+                    .filter(item => 
+                      item.name.toLowerCase().includes(pickerSearchTerm.toLowerCase()) || 
+                      (item.code && item.code.toLowerCase().includes(pickerSearchTerm.toLowerCase()))
+                    )
+                    .map(item => (
+                      <div 
+                        key={item._id}
+                        className="px-4 py-4 hover:bg-indigo-50/50 cursor-pointer flex items-center justify-between group transition-all rounded-xl"
+                        onClick={() => selectItem(item)}
+                      >
+                        <div className="flex items-center gap-4">
+                           <div className="w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center shadow-sm group-hover:border-indigo-200 group-hover:scale-110 transition-all">
+                              <Receipt size={20} className="text-indigo-600" />
+                           </div>
+                           <div>
+                              <div className="font-black text-gray-900 text-sm uppercase group-hover:text-indigo-600 transition-colors">{item.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Code: {item.code || '-'}</span>
+                                 <span className="w-1 h-1 bg-gray-300 rounded-full" />
+                                 <span className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">{item.category}</span>
+                              </div>
+                           </div>
+                        </div>
+                        <div className="text-right">
+                           <div className="text-sm font-black text-gray-900 italic">Buy: ₹{item.purchasePrice?.toLocaleString()}</div>
+                           <div className="text-[10px] text-gray-400 font-bold uppercase">Stock: {item.stock} {item.unit}</div>
+                        </div>
+                      </div>
+                    ))
+                  }
+                  {allItems.filter(item => 
+                    item.name.toLowerCase().includes(pickerSearchTerm.toLowerCase()) || 
+                    (item.code && item.code.toLowerCase().includes(pickerSearchTerm.toLowerCase()))
+                  ).length === 0 && (
+                    <div className="py-12 text-center">
+                       <div className="bg-gray-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-center">
+                          <X size={32} className="text-gray-300 mx-auto" />
+                       </div>
+                       <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No products found</p>
+                    </div>
+                  )}
+                </div>
+             </div>
+          </div>
         </div>
-      </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 };

@@ -132,9 +132,7 @@ const PaymentOut = () => {
                         >
                             <Plus size={18} /> Record New Entry
                         </button>
-                        <button className="p-4 text-gray-400 bg-white hover:text-indigo-600 rounded-[20px] border border-gray-100 transition-all shadow-sm hover:shadow-md">
-                            <Settings size={20} />
-                        </button>
+                    
                     </div>
                 </div>
 

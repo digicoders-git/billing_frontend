@@ -22,6 +22,7 @@ const Parties = () => {
   const itemsPerPage = 8;
 
   const [partiesList, setPartiesList] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchParties = async () => {
@@ -37,8 +38,18 @@ const Parties = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get('/party-categories');
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
   React.useEffect(() => {
     fetchParties();
+    fetchCategories();
   }, []);
 
   const handleDelete = async (id) => {
@@ -242,9 +253,9 @@ const Parties = () => {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                   >
                       <option value="">All Categories</option>
-                      <option value="Pharma">Pharma</option>
-                      <option value="Grocery">Grocery</option>
-                      <option value="Electronics">Electronics</option>
+                      {categories.map(cat => (
+                        <option key={cat._id} value={cat.name}>{cat.name}</option>
+                      ))}
                   </select>
                   <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
               </div>

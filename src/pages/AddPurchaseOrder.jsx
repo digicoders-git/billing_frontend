@@ -14,6 +14,13 @@ import api from '../lib/axios';
 import Swal from 'sweetalert2';
 import { cn } from '../lib/utils';
 
+const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 28% + Cess @ 60%"
+];
+
 const AddPurchaseOrder = () => {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -28,13 +35,13 @@ const AddPurchaseOrder = () => {
         expiryDate: '',
         party: null,
         items: [
-            { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', rate: 0, amount: 0 }
+            { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', gstAmount: 0, amount: 0 }
         ],
         notes: '',
         terms: '1. Please supply the goods as per the specifications.\n2. Delivery should be within the stipulated time.\n3. Payment will be processed after inspection of goods.',
         additionalCharges: 0,
         overallDiscount: 0,
-        overallDiscountType: 'percentage', // 'percentage' or 'fixed'
+        overallDiscountType: 'percentage',
         autoRoundOff: true,
         status: 'Pending'
     });
@@ -44,9 +51,10 @@ const AddPurchaseOrder = () => {
     const [searchParty, setSearchParty] = useState('');
     const [showPartyDropdown, setShowPartyDropdown] = useState(false);
     
-    // Item Search State
-    const [activeItemSearchIndex, setActiveItemSearchIndex] = useState(null);
-    const [itemSearchTerm, setItemSearchTerm] = useState('');
+    // Item Picker Modal State
+    const [showItemPicker, setShowItemPicker] = useState(false);
+    const [activeItemIndex, setActiveItemIndex] = useState(null);
+    const [itemPickerSearch, setItemPickerSearch] = useState('');
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -57,10 +65,6 @@ const AddPurchaseOrder = () => {
                     api.get('/items'),
                     api.get('/purchase-orders/next-po')
                 ]);
-                
-                console.log('✅ Parties fetched:', partiesRes.data);
-                console.log('✅ Items fetched:', itemsRes.data);
-                console.log('✅ Next PO Number:', nextNoRes.data);
                 
                 setParties(partiesRes.data || []);
                 setInventoryItems(itemsRes.data || []);
@@ -102,13 +106,38 @@ const AddPurchaseOrder = () => {
         if (isEdit) fetchEditData();
     }, [id, isEdit, navigate]);
 
-    // Item Management Logic
+    // Handle Item Updates with GST
     const updateItem = (tempId, field, value) => {
         setFormData(prev => {
             const newItems = prev.items.map(item => {
                 if (item.id === tempId) {
                     const updatedItem = { ...item, [field]: value };
-                    updatedItem.amount = (parseFloat(updatedItem.qty) || 0) * (parseFloat(updatedItem.rate) || 0);
+                    
+                    // Calculate amount with GST
+                    const qty = parseFloat(updatedItem.qty) || 0;
+                    const rate = parseFloat(updatedItem.rate) || 0;
+                    const discPercent = parseFloat(updatedItem.discount) || 0;
+                    const gstStr = updatedItem.gstRate || 'None';
+                    
+                    // Extract GST percentage
+                    let gstPercent = 0;
+                    if (gstStr.includes('@')) {
+                        const matches = gstStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+                        if (matches) {
+                            gstPercent = matches.reduce((acc, val) => {
+                                const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                                return acc + (isNaN(num) ? 0 : num);
+                            }, 0);
+                        }
+                    }
+                    
+                    const baseAmount = qty * rate;
+                    const discAmount = (baseAmount * discPercent) / 100;
+                    const taxableAmount = baseAmount - discAmount;
+                    const gstAmount = (taxableAmount * gstPercent) / 100;
+                    
+                    updatedItem.gstAmount = gstAmount;
+                    updatedItem.amount = taxableAmount + gstAmount;
                     return updatedItem;
                 }
                 return item;
@@ -117,28 +146,32 @@ const AddPurchaseOrder = () => {
         });
     };
 
-    const handleSelectProduct = (index, product) => {
+    const selectItemFromPicker = (itemData) => {
+        if (activeItemIndex === null) return;
+        
         setFormData(prev => {
             const newItems = [...prev.items];
-            newItems[index] = {
-                ...newItems[index],
-                itemId: product._id,
-                name: product.name,
-                hsn: product.hsn || '',
-                rate: product.purchasePrice || 0,
-                unit: product.unit || 'PCS',
-                amount: (product.purchasePrice || 0) * (newItems[index].qty || 1)
+            const qty = newItems[activeItemIndex].qty || 1;
+            const rate = itemData.purchasePrice || 0;
+            
+            newItems[activeItemIndex] = {
+                ...newItems[activeItemIndex],
+                itemId: itemData._id,
+                name: itemData.name,
+                code: itemData.code,
+                hsn: itemData.hsn || '',
+                mrp: itemData.mrp || 0,
+                rate: rate,
+                gstRate: itemData.gstRate || 'None',
+                unit: itemData.unit || 'PCS',
+                amount: rate * qty
             };
-
-            // Auto-add new row if selecting for the last row
-            if (index === newItems.length - 1) {
-                newItems.push({ id: Date.now() + 1, itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', rate: 0, amount: 0 });
-            }
-
             return { ...prev, items: newItems };
         });
-        setActiveItemSearchIndex(null);
-        setItemSearchTerm('');
+        
+        setShowItemPicker(false);
+        setActiveItemIndex(null);
+        setItemPickerSearch('');
     };
 
     const removeItem = (tempId) => {
@@ -148,6 +181,13 @@ const AddPurchaseOrder = () => {
                 items: prev.items.filter(item => item.id !== tempId) 
             }));
         }
+    };
+
+    const addItem = () => {
+        setFormData(prev => ({
+            ...prev,
+            items: [...prev.items, { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', gstAmount: 0, amount: 0 }]
+        }));
     };
 
     // Calculations
@@ -205,7 +245,11 @@ const AddPurchaseOrder = () => {
                     hsn: item.hsn || '',
                     qty: parseFloat(item.qty) || 0,
                     unit: item.unit || 'PCS',
+                    mrp: parseFloat(item.mrp) || 0,
                     rate: parseFloat(item.rate) || 0,
+                    discount: parseFloat(item.discount) || 0,
+                    gstRate: item.gstRate,
+                    gstAmount: parseFloat(item.gstAmount) || 0,
                     amount: parseFloat(item.amount) || 0
                 })),
                 totalAmount: totals.roundedTotal,
@@ -235,6 +279,14 @@ const AddPurchaseOrder = () => {
             setIsSaving(false);
         }
     };
+
+    // Filtered items for picker
+    const filteredPickerItems = useMemo(() => {
+        return inventoryItems.filter(item => 
+            item.name.toLowerCase().includes(itemPickerSearch.toLowerCase()) ||
+            (item.code && item.code.toLowerCase().includes(itemPickerSearch.toLowerCase()))
+        );
+    }, [inventoryItems, itemPickerSearch]);
 
     if (loading) {
         return (
@@ -400,7 +452,7 @@ const AddPurchaseOrder = () => {
                                         </div>
                                         <button 
                                             onClick={() => setFormData(prev => ({ ...prev, party: null }))} 
-                                            className="text-xs font-bold text-rose-500 hover:underline"
+                                            className="text-xs font-bold text-rose-500"
                                         >
                                             Change
                                         </button>
@@ -409,129 +461,112 @@ const AddPurchaseOrder = () => {
                             </div>
 
                             {/* Items Section */}
-                            <div className="bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
-                                <div className="p-6 border-b border-gray-50 bg-[#FDFDFF] flex justify-between items-center">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
-                                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-[3px]">Line Requisition Archiving</span>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Registry Sync: Active</span>
-                                        <div className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 uppercase tracking-widest">
-                                            Items: {formData.items.filter(i => i.itemId).length}
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                <div className="p-6 border-b border-gray-100">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">Line Items</h3>
                                 </div>
                                 
-                                <div className="flex-1 overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="bg-gray-50/30 text-[9px] font-black text-gray-400 uppercase tracking-[4px] border-b border-gray-100/50 italic">
-                                                <th className="px-10 py-6 w-24 opacity-30 text-center">#</th>
-                                                <th className="px-6 py-6 min-w-[300px]">Item Description & HSN Audit</th>
-                                                <th className="px-6 py-6 text-center w-32">Procure Qty</th>
-                                                <th className="px-6 py-6 text-right w-44">Audit Rate (₹)</th>
-                                                <th className="px-10 py-6 text-right w-48 font-black">Line Value Audit</th>
-                                                <th className="px-8 py-6 w-24"></th>
+                                {/* Desktop Table */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full border-collapse">
+                                        <thead className="bg-gray-50 border-b border-gray-200">
+                                            <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                                                <th className="px-4 py-3 text-left w-12">NO</th>
+                                                <th className="px-4 py-3 text-left min-w-[200px]">ITEMS/ SERVICES</th>
+                                                <th className="px-4 py-3 text-left w-24">HSN</th>
+                                                <th className="px-4 py-3 text-right w-28">MRP (₹)</th>
+                                                <th className="px-4 py-3 text-center w-24">QTY</th>
+                                                <th className="px-4 py-3 text-right w-28">PRICE (₹)</th>
+                                                <th className="px-4 py-3 text-left w-32">GST</th>
+                                                <th className="px-4 py-3 text-right w-24">DISC %</th>
+                                                <th className="px-4 py-3 text-right w-32">AMOUNT (₹)</th>
+                                                <th className="px-4 py-3 text-center w-10"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-gray-50/50">
+                                        <tbody className="divide-y divide-gray-100">
                                             {formData.items.map((item, index) => (
-                                                <tr key={item.id} className="group/row hover:bg-[#F9FAFF] transition-all">
-                                                    <td className="px-10 py-8 text-[11px] font-black text-gray-200 italic group-hover/row:text-indigo-400 transition-colors uppercase text-center">{index + 1}</td>
-                                                    <td className="px-6 py-8 relative text-left">
-                                                        <div className="flex flex-col gap-2">
-                                                            <input 
-                                                                type="text" 
-                                                                className="w-full bg-transparent border-none outline-none text-[14px] font-black text-gray-900 uppercase placeholder:text-gray-200 group-hover/row:placeholder:text-gray-300 transition-all font-sans italic tracking-tighter"
-                                                                placeholder="INDENT NEW ITEM..."
-                                                                value={activeItemSearchIndex === item.id ? itemSearchTerm : item.name}
-                                                                onChange={(e) => {
-                                                                    const val = e.target.value;
-                                                                    setItemSearchTerm(val);
-                                                                    setActiveItemSearchIndex(item.id);
-                                                                    if (!val) updateItem(item.id, 'name', '');
-                                                                }}
-                                                                onFocus={() => {
-                                                                    setActiveItemSearchIndex(item.id);
-                                                                    setItemSearchTerm(item.name);
-                                                                }}
-                                                            />
-                                                            <div className="flex items-center gap-4">
-                                                                <span className="text-[9px] font-black text-indigo-400/50 uppercase tracking-[3px] italic bg-indigo-50/50 px-2.5 py-1 rounded-lg">HSN: {item.hsn || 'PENDING'}</span>
-                                                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-[2px]">{item.unit || 'PCS'} REGISTRY</span>
-                                                            </div>
+                                                <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
+                                                    <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
+                                                    <td className="px-4 py-3">
+                                                        <div 
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm font-medium text-gray-800 hover:border-indigo-400 focus-within:border-indigo-500 transition-all cursor-pointer flex items-center gap-2"
+                                                            onClick={() => {
+                                                                setActiveItemIndex(index);
+                                                                setShowItemPicker(true);
+                                                            }}
+                                                        >
+                                                            {item.name ? (
+                                                                <span className="flex-1 truncate">{item.name}</span>
+                                                            ) : (
+                                                                <span className="flex-1 text-gray-400">Search Item...</span>
+                                                            )}
                                                         </div>
-
-                                                        {activeItemSearchIndex === item.id && inventoryItems.length > 0 && (
-                                                            <>
-                                                                <div className="fixed inset-0 z-[9998]" onClick={() => setActiveItemSearchIndex(null)} />
-                                                                <div className="absolute top-full left-6 w-[400px] bg-white border border-gray-200 rounded-[24px] shadow-2xl mt-4 z-[9999] max-h-80 overflow-y-auto ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-200">
-                                                                    {inventoryItems.filter(p => !itemSearchTerm || p.name.toLowerCase().includes(itemSearchTerm.toLowerCase())).length > 0 ? (
-                                                                        inventoryItems.filter(p => !itemSearchTerm || p.name.toLowerCase().includes(itemSearchTerm.toLowerCase())).map(product => (
-                                                                            <div 
-                                                                                key={product._id} 
-                                                                                className="px-8 py-5 hover:bg-gray-50 cursor-pointer transition-all flex items-center justify-between group/suggest border-b border-gray-50 last:border-0"
-                                                                                onClick={() => handleSelectProduct(index, product)}
-                                                                            >
-                                                                                <div className="flex flex-col">
-                                                                                    <div className="font-black text-[13px] text-gray-900 uppercase tracking-tight group-hover/suggest:text-indigo-600 transition-colors">{product.name}</div>
-                                                                                    <div className="text-[9px] text-gray-400 font-bold uppercase tracking-[2px] mt-1">Archived Rate: <span className="text-gray-900">₹ {product.purchasePrice?.toLocaleString()}</span> | HSN: {product.hsn || 'NA'}</div>
-                                                                                </div>
-                                                                                <ArrowRight size={16} className="text-gray-200 group-hover/suggest:translate-x-1 transition-all group-hover/suggest:text-indigo-600" />
-                                                                            </div>
-                                                                        ))
-                                                                    ) : (
-                                                                        <div className="p-8 text-center text-gray-400 italic">
-                                                                            <div className="text-[11px] font-black uppercase tracking-[4px]">Product Not Found</div>
-                                                                            <p className="text-[9px] mt-2 mb-4">RECORD MANUALLY BELOW</p>
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    updateItem(item.id, 'name', itemSearchTerm);
-                                                                                    setActiveItemSearchIndex(null);
-                                                                                }}
-                                                                                className="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-all"
-                                                                            >
-                                                                                Use Custom Meta
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        )}
                                                     </td>
-                                                    <td className="px-6 py-8 text-center">
-                                                        <div className="inline-flex items-center gap-3 bg-gray-50 rounded-[14px] p-2.5 border border-transparent focus-within:bg-white focus-within:border-indigo-100 transition-all w-28">
+                                                    <td className="px-2 py-3">
+                                                        <input 
+                                                            type="text" 
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-center font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                                                            placeholder="HSN"
+                                                            value={item.hsn}
+                                                            onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-3">
+                                                        <input 
+                                                            type="number" 
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                                                            placeholder="0"
+                                                            value={item.mrp || ''}
+                                                            onChange={(e) => updateItem(item.id, 'mrp', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="px-2 py-3">
+                                                        <div className="flex items-center justify-center gap-1">
                                                             <input 
                                                                 type="number" 
-                                                                className="w-full bg-transparent border-none outline-none text-center text-[13px] font-black text-gray-900"
+                                                                className="w-12 bg-transparent border-b border-gray-200 px-1 py-1 text-center text-sm font-bold text-indigo-600 focus:border-indigo-500 outline-none"
                                                                 value={item.qty}
                                                                 onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
                                                             />
+                                                            <span className="text-[9px] text-gray-400 font-medium uppercase">{item.unit}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-8 text-right">
-                                                        <div className="inline-flex items-center gap-3 bg-gray-50 rounded-[14px] p-3 border border-transparent focus-within:bg-white focus-within:border-indigo-100 transition-all w-40 group/rate">
-                                                            <span className="text-[11px] font-black text-gray-300 italic group-focus-within/rate:text-indigo-400 transition-colors">₹</span>
-                                                            <input 
-                                                                type="number" 
-                                                                className="w-full bg-transparent border-none outline-none text-right text-[14px] font-black text-gray-900 italic tracking-tighter"
-                                                                value={item.rate}
-                                                                onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
-                                                            />
-                                                        </div>
+                                                    <td className="px-2 py-3">
+                                                        <input 
+                                                            type="number" 
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-800 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                                                            value={item.rate}
+                                                            onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
+                                                        />
                                                     </td>
-                                                    <td className="px-10 py-8 text-right font-black text-gray-900 text-xl italic tracking-tighter group-hover/row:scale-105 transition-transform origin-right">
-                                                        <span className="text-[11px] font-bold text-gray-200 mr-2 not-italic">₹</span>
-                                                        {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                                    </td>
-                                                    <td className="px-8 py-8 text-center">
-                                                        <button 
-                                                            onClick={() => removeItem(item.id)} 
-                                                            className="p-3 text-gray-200 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover/row:opacity-100 active:scale-75"
+                                                    <td className="px-2 py-3">
+                                                        <select
+                                                            value={item.gstRate}
+                                                            onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all cursor-pointer"
                                                         >
-                                                            <Trash2 size={16} />
-                                                        </button>
+                                                            {gstOptions.map(opt => (
+                                                                <option key={opt} value={opt}>{opt}</option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+                                                    <td className="px-2 py-3">
+                                                        <input 
+                                                            type="number" 
+                                                            className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-right font-medium text-gray-500 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                                                            value={item.discount}
+                                                            onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-bold text-indigo-600 text-sm">
+                                                        ₹ {item.amount.toLocaleString()}
+                                                    </td>
+                                                    <td className="px-2 py-3 text-center">
+                                                        <Trash2 
+                                                            size={16} 
+                                                            className="text-gray-300 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100 mx-auto"
+                                                            onClick={() => removeItem(item.id)}
+                                                        />
                                                     </td>
                                                 </tr>
                                             ))}
@@ -539,17 +574,69 @@ const AddPurchaseOrder = () => {
                                     </table>
                                 </div>
 
-                                <div className="p-8 bg-gray-50/30 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-6">
-                                    <button 
-                                        onClick={() => setFormData(p => ({...p, items: [...p.items, {id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', rate: 0, amount: 0}]}))}
-                                        className="px-10 py-4 bg-gray-900 text-white rounded-[20px] text-[10px] font-black uppercase tracking-[3px] shadow-sm hover:bg-indigo-600 transition-all active:scale-95 flex items-center gap-3 group"
+                                {/* Mobile View */}
+                                <div className="md:hidden divide-y divide-gray-100">
+                                    {formData.items.map((item, index) => (
+                                        <div key={item.id} className="p-4 bg-white space-y-3">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                                                <button onClick={() => removeItem(item.id)}><X size={16} className="text-gray-400 hover:text-red-500" /></button>
+                                            </div>
+                                            <div 
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 cursor-pointer hover:border-indigo-300 transition-all"
+                                                onClick={() => {
+                                                    setActiveItemIndex(index);
+                                                    setShowItemPicker(true);
+                                                }}
+                                            >
+                                                {item.name || 'Tap to select item...'}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                                                    <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="HSN" value={item.hsn} onChange={(e) => updateItem(item.id, 'hsn', e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.mrp || ''} onChange={(e) => updateItem(item.id, 'mrp', e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600" placeholder="1" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Price</label>
+                                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.rate} onChange={(e) => updateItem(item.id, 'rate', e.target.value)} />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                                                    <select value={item.gstRate} onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium">
+                                                        {gstOptions.map(opt => (
+                                                            <option key={opt} value={opt}>{opt}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.discount} onChange={(e) => updateItem(item.id, 'discount', e.target.value)} />
+                                                </div>
+                                            </div>
+                                            <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                                <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Add Item Button */}
+                                <div className="p-4 border-t border-gray-100 bg-gray-50/30">
+                                    <div 
+                                        className="w-full h-12 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-white hover:border-indigo-400 transition-all cursor-pointer group"
+                                        onClick={addItem}
                                     >
-                                        <Plus size={18} />
-                                        Manual Acquisition Line
-                                    </button>
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic leading-none">Total Indent Count:</span>
-                                        <span className="text-lg font-black text-gray-900 italic leading-none">{formData.items.length} Rows</span>
+                                        <Plus size={20} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                        <span className="text-sm font-bold text-gray-500 group-hover:text-indigo-600 uppercase tracking-wider">Add Item</span>
                                     </div>
                                 </div>
                             </div>
@@ -599,65 +686,67 @@ const AddPurchaseOrder = () => {
                             </div>
 
                             {/* Finance Card */}
-                            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-                                <div className="text-xs font-bold text-gray-700 flex items-center gap-2">
-                                    <Calculator size={16} className="text-indigo-500" />
-                                    Financial Summary
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center text-sm font-semibold">
-                                        <span className="text-gray-500">Subtotal</span>
-                                        <span className="text-gray-900">₹ {totals.subtotal.toLocaleString()}</span>
+                            <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 shadow-sm">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Subtotal</span>
+                                        <span className="text-sm font-black text-gray-800">₹ {totals.subtotal.toLocaleString()}</span>
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-xs font-semibold text-gray-500">
-                                            <span>Additional Charges</span>
-                                            <span>+ ₹</span>
+                                    
+                                    <div className="flex justify-between items-center group gap-2">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
+                                                <Plus size={10} /> Add Charges
+                                            </span>
                                         </div>
                                         <input 
                                             type="number" 
-                                            className="w-full bg-gray-50 border border-gray-200 focus:bg-white focus:border-indigo-300 px-4 py-2.5 rounded-lg text-right text-sm font-semibold outline-none transition-all"
                                             value={formData.additionalCharges} 
-                                            onChange={e => setFormData({...formData, additionalCharges: e.target.value})} 
+                                            onChange={(e) => setFormData({...formData, additionalCharges: parseFloat(e.target.value) || 0})}
+                                            className="w-20 text-right bg-transparent border-b border-dashed border-gray-200 outline-none text-xs font-bold"
                                         />
                                     </div>
 
-                                    <div className="space-y-2 pt-2 border-t border-gray-100">
-                                        <div className="flex justify-between items-center text-xs font-semibold text-rose-500">
+                                    <div className="flex justify-between items-center group gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
+                                                <Plus size={10} /> Discount
+                                            </span>
                                             <select 
-                                                className="bg-transparent border-none outline-none text-xs font-semibold cursor-pointer"
                                                 value={formData.overallDiscountType}
                                                 onChange={(e) => setFormData({...formData, overallDiscountType: e.target.value})}
+                                                className="text-[9px] bg-blue-50 text-blue-600 border-none rounded p-0.5 outline-none"
                                             >
-                                                <option value="percentage">Discount %</option>
-                                                <option value="fixed">Discount ₹</option>
+                                                <option value="percentage">%</option>
+                                                <option value="fixed">Flat</option>
                                             </select>
-                                            <span>- ₹</span>
                                         </div>
                                         <input 
                                             type="number" 
-                                            className="w-full bg-rose-50 border border-rose-200 focus:bg-white focus:border-rose-300 px-4 py-2.5 rounded-lg text-right text-sm font-semibold text-rose-600 outline-none transition-all"
                                             value={formData.overallDiscount} 
-                                            onChange={e => setFormData({...formData, overallDiscount: e.target.value})} 
+                                            onChange={(e) => setFormData({...formData, overallDiscount: parseFloat(e.target.value) || 0})}
+                                            className="w-20 text-right bg-transparent border-b border-dashed border-gray-200 outline-none text-xs font-bold"
                                         />
-                                        <div className="text-xs text-rose-400 text-right">- ₹ {totals.discountVal.toLocaleString()}</div>
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-100">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <span className="text-xs font-bold text-indigo-600">Total Amount</span>
-                                        <div className="flex items-center gap-2">
-                                            <input type="checkbox" checked={formData.autoRoundOff} onChange={e => setFormData({...formData, autoRoundOff: e.target.checked})} className="w-3 h-3 rounded cursor-pointer" />
-                                            <span className="text-xs text-gray-400">Round Off</span>
+                                <div className="pt-2">
+                                    <div className="flex items-center gap-2 mb-6 bg-gray-50 p-2 rounded-xl">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={formData.autoRoundOff}
+                                            onChange={(e) => setFormData({...formData, autoRoundOff: e.target.checked})}
+                                            className="w-4 h-4 rounded text-black border-gray-300 focus:ring-0 cursor-pointer" 
+                                        />
+                                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Auto Round Off</span>
+                                    </div>
+
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Total Amount</label>
+                                        <div className="bg-black p-4 rounded-2xl text-white shadow-xl shadow-gray-200 transform hover:scale-[1.02] transition-transform duration-300">
+                                            <div className="text-3xl font-black tracking-tight">₹ {totals.roundedTotal.toLocaleString()}</div>
                                         </div>
                                     </div>
-                                    <div className="text-3xl font-black text-gray-900">
-                                        ₹ {totals.roundedTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </div>
-                                    <div className="text-xs text-indigo-400 text-right mt-2">Round Off: ₹ {totals.roundOffDiff}</div>
                                 </div>
                             </div>
 
@@ -689,6 +778,86 @@ const AddPurchaseOrder = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Item Picker Modal */}
+            {showItemPicker && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">Select Item</h3>
+                                <p className="text-xs text-gray-500 font-medium mt-0.5">Choose from your inventory</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    setShowItemPicker(false);
+                                    setActiveItemIndex(null);
+                                    setItemPickerSearch('');
+                                }}
+                                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Search Bar */}
+                        <div className="px-6 py-4 border-b border-gray-100 shrink-0">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                <input 
+                                    type="text"
+                                    placeholder="Search by item name or code..."
+                                    value={itemPickerSearch}
+                                    onChange={(e) => setItemPickerSearch(e.target.value)}
+                                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm font-medium"
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+
+                        {/* Items Table */}
+                        <div className="flex-1 overflow-y-auto">
+                            {filteredPickerItems.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                                    <Package size={48} className="mb-4 opacity-50" />
+                                    <p className="text-sm font-bold uppercase tracking-wider">No items found</p>
+                                </div>
+                            ) : (
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                        <tr className="text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                                            <th className="px-6 py-3 text-left">Item Name</th>
+                                            <th className="px-6 py-3 text-left">Code</th>
+                                            <th className="px-6 py-3 text-center">Stock</th>
+                                            <th className="px-6 py-3 text-right">MRP (₹)</th>
+                                            <th className="px-6 py-3 text-right">Purchase Price (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {filteredPickerItems.map(item => (
+                                            <tr 
+                                                key={item._id}
+                                                onClick={() => selectItemFromPicker(item)}
+                                                className="hover:bg-indigo-50 cursor-pointer transition-colors group"
+                                            >
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-sm text-gray-900 group-hover:text-indigo-600">{item.name}</div>
+                                                    <div className="text-xs text-gray-400 mt-0.5">HSN: {item.hsn || 'N/A'}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-600">{item.code || '-'}</td>
+                                                <td className="px-6 py-4 text-center text-sm font-bold text-gray-700">{item.stock} {item.unit}</td>
+                                                <td className="px-6 py-4 text-right text-sm font-bold text-gray-700">₹{item.mrp || 0}</td>
+                                                <td className="px-6 py-4 text-right text-base font-black text-indigo-600">₹{item.purchasePrice || 0}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 };

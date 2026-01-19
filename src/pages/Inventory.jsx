@@ -12,6 +12,7 @@ import Pagination from '../components/shared/Pagination';
 import Swal from 'sweetalert2';
 import xlsx from 'json-as-xlsx';
 import api from '../lib/axios';
+import { cn } from '../lib/utils';
 
 import useUserPermissions from '../hooks/useUserPermissions';
 
@@ -54,29 +55,58 @@ const Inventory = () => {
   const [viewedItem, setViewedItem] = useState(null);
 
   const [items, setItems] = useState([]);
+  const [godowns, setGodowns] = useState([]);
   const [categories, setCategories] = useState([]);
+  
+  // ... (fetchItems logic remains as it was updated in previous step) ...
+
+
 
   const fetchItems = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/items');
-      setItems(response.data);
+      const [itemsRes, catsRes, godownsRes] = await Promise.all([
+        api.get('/items'),
+        api.get('/item-categories'),
+        api.get('/godowns')
+      ]);
       
-      // Extract unique categories and counts
-      const cats = {};
-      response.data.forEach(item => {
+      const itemsData = itemsRes.data;
+      const backendCats = catsRes.data;
+      setGodowns(godownsRes.data); // Store fetched Godowns
+      
+      setItems(itemsData);
+      
+      // Extract unique categories from items to get counts
+      const itemCats = {};
+      itemsData.forEach(item => {
         const cat = item.category || 'Uncategorized';
-        cats[cat] = (cats[cat] || 0) + 1;
+        itemCats[cat] = (itemCats[cat] || 0) + 1;
       });
       
-      setCategories(Object.entries(cats).map(([name, count], index) => ({
-        id: index,
-        name,
-        count
-      })));
+      // Combine backend categories with item-derived ones
+      const finalCats = backendCats.map(cat => ({
+        id: cat._id,
+        name: cat.name,
+        count: itemCats[cat.name] || 0
+      }));
+
+      // Add 'Uncategorized' if not present but has items
+      if (itemCats['Uncategorized'] && !finalCats.find(c => c.name === 'Uncategorized')) {
+          finalCats.push({ id: 'uncat', name: 'Uncategorized', count: itemCats['Uncategorized'] });
+      }
+
+      // Add any other categories that are in items but not in backend
+      Object.entries(itemCats).forEach(([name, count]) => {
+          if (name !== 'Uncategorized' && !finalCats.find(c => c.name === name)) {
+              finalCats.push({ id: 'adhoc-' + name, name, count });
+          }
+      });
+
+      setCategories(finalCats);
 
     } catch (error) {
-      console.error('Error fetching items:', error);
+      console.error('Error fetching inventory:', error);
       Swal.fire('Error', 'Failed to fetch inventory', 'error');
     } finally {
       setLoading(false);
@@ -116,7 +146,7 @@ const Inventory = () => {
     return stock <= minStock;
   }).length;
 
-  const handleSaveCategory = () => {
+  const handleSaveCategory = async () => {
     const trimmedCategory = categoryName.trim();
     
     if (!trimmedCategory) {
@@ -124,13 +154,14 @@ const Inventory = () => {
         return;
     }
 
-    if (/^\d+$/.test(trimmedCategory)) {
-        Swal.fire('Error', 'Category Name cannot be purely numbers', 'error');
+    // Block purely numeric or special character names (require at least one letter)
+    if (!/[a-zA-Z]/.test(trimmedCategory)) {
+        Swal.fire('Error', 'Category Name must contain at least one letter and cannot be purely numeric', 'error');
         return;
     }
 
-    if (trimmedCategory.length < 3) {
-        Swal.fire('Error', 'Category Name must be at least 3 characters long', 'error');
+    if (trimmedCategory.length < 2) {
+        Swal.fire('Error', 'Category Name must be at least 2 characters long', 'error');
         return;
     }
 
@@ -140,22 +171,78 @@ const Inventory = () => {
         return;
     }
     
-    // Update local state to show in dropdowns immediately
-    setCategories(prev => [...prev, { id: Date.now(), name: trimmedCategory, count: 0 }]);
-    Swal.fire('Success', 'Category added successfully', 'success');
+    try {
+        if (editingCategory) {
+            // If it's an adhoc category, we should POST (create) it rather than PUT (update)
+            // since it doesn't exist in the backend ItemCategory collection yet.
+            if (editingCategory.id.toString().startsWith('adhoc-')) {
+                const response = await api.post('/item-categories', { name: trimmedCategory });
+                setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, id: response.data._id, name: response.data.name } : c));
+                Swal.fire('Success', 'Category created from ad-hoc entry', 'success');
+            } else {
+                const response = await api.put(`/item-categories/${editingCategory.id}`, { name: trimmedCategory });
+                setCategories(prev => prev.map(c => c.id === editingCategory.id ? { ...c, name: response.data.name } : c));
+                Swal.fire('Success', 'Category updated successfully', 'success');
+            }
+        } else {
+            const response = await api.post('/item-categories', { name: trimmedCategory });
+            // Update local state to show in dropdowns immediately
+            setCategories(prev => [...prev, { id: response.data._id, name: response.data.name, count: 0 }]);
+            Swal.fire('Success', 'Category added successfully', 'success');
+        }
 
-    setShowCategoryModal(false);
-    setCategoryName('');
+        setShowCategoryModal(false);
+        setCategoryName('');
+        setEditingCategory(null);
+    } catch (error) {
+        console.error('Error saving category:', error);
+        Swal.fire('Error', error.response?.data?.message || 'Failed to save category', 'error');
+    }
+  };
+
+  const handleDeleteCategory = async (cat) => {
+    // Prevent deleting 'Uncategorized' if it's protected or adhoc categories
+    if (cat.id === 'uncat' || cat.id.toString().startsWith('adhoc-')) {
+        Swal.fire('Error', 'This category cannot be deleted as it is a default or ad-hoc category.', 'error');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to delete "${cat.name}"? This will not delete the items in it.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#000000',
+        confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+        try {
+            await api.delete(`/item-categories/${cat.id}`);
+            setCategories(prev => prev.filter(c => c.id !== cat.id));
+            Swal.fire('Deleted!', 'Category has been removed.', 'success');
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            Swal.fire('Error', 'Failed to delete category', 'error');
+        }
+    }
+  };
+
+  const startEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setCategoryName(cat.name);
   };
 
   // --- Item Management Functions ---
 
+  // --- Item Management Functions ---
   const handleAddItem = () => {
       setIsEditingItem(false);
       setItemFormData({
-        name: '', code: '', category: '', unit: 'PCS',
+        name: '', code: '', category: '', godown: '', unit: 'PCS',
         stock: 0, minStock: 5, purchasePrice: 0,
-        sellingPrice: 0, mrp: 0, wholesalePrice: 0, description: '', gstRate: 'None'
+        sellingPrice: 0, mrp: 0, wholesalePrice: 0, description: '', gstRate: 'None', hsn: ''
       });
       setShowItemModal(true);
   };
@@ -185,8 +272,19 @@ const Inventory = () => {
           return;
       }
 
-      if (/^\d+$/.test(trimmedName)) {
-        Swal.fire('Error', 'Item Name cannot be purely numbers', 'error');
+      if (!itemFormData.category) {
+          Swal.fire('Warning', 'Please select a Category for the item', 'warning');
+          return;
+      }
+      
+      if (!itemFormData.godown) {
+          Swal.fire('Warning', 'Please select a Godown Location for the item', 'warning');
+          return;
+      }
+
+      // Block purely numeric or special character names (require at least one letter)
+      if (!/[a-zA-Z]/.test(trimmedName)) {
+        Swal.fire('Error', 'Item Name must contain at least one letter (e.g., "Item 654" is fine, but "654" is not)', 'error');
         return;
       }
 
@@ -224,6 +322,8 @@ const Inventory = () => {
           Swal.fire('Error', error.response?.data?.message || 'Failed to save item', 'error');
       }
   };
+
+
 
   const handleDeleteItem = async (id) => {
       const result = await Swal.fire({
@@ -420,17 +520,39 @@ const Inventory = () => {
 
       {/* Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <div className="bg-[#000000] border border-gray-100 p-5 rounded-2xl shadow-sm flex items-center justify-between group hover:border-indigo-100 transition-all cursor-pointer">
+          <div className={cn(
+            "p-5 rounded-2xl shadow-sm flex items-center justify-between group transition-all cursor-pointer border",
+            stockValuation < 0 
+              ? "bg-red-50 border-red-200 shadow-red-100" 
+              : "bg-[#000000] border-gray-100 hover:border-indigo-100 shadow-sm"
+          )}>
               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                      <TrendingUp size={20} />
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                    stockValuation < 0 ? "bg-red-100 text-red-600" : "bg-indigo-50 text-indigo-600"
+                  )}>
+                      {stockValuation < 0 ? <AlertCircle size={20} /> : <TrendingUp size={20} />}
                   </div>
                   <div>
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Stock Valuation</p>
-                      <p className="text-xl font-bold text-white italic">₹ {stockValuation.toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        <p className={cn(
+                          "text-[10px] font-black uppercase tracking-widest",
+                          stockValuation < 0 ? "text-red-500" : "text-gray-400"
+                        )}>Stock Valuation</p>
+                        {stockValuation < 0 && (
+                          <span className="bg-red-600 text-[8px] text-white px-1.5 py-0.5 rounded font-black animate-pulse">CRITICAL: CHECK STOCK</span>
+                        )}
+                      </div>
+                      <p className={cn(
+                        "text-xl font-bold italic",
+                        stockValuation < 0 ? "text-red-700" : "text-white"
+                      )}>₹ {stockValuation.toLocaleString()}</p>
                   </div>
               </div>
-              <ExternalLink size={16} className="text-gray-300 group-hover:text-indigo-600 transition-colors" />
+              <ExternalLink size={16} className={cn(
+                "transition-colors",
+                stockValuation < 0 ? "text-red-400 group-hover:text-red-600" : "text-gray-300 group-hover:text-indigo-600"
+              )} />
           </div>
           <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm flex items-center justify-between group hover:border-orange-100 transition-all cursor-pointer">
               <div className="flex items-center gap-4">
@@ -494,31 +616,56 @@ const Inventory = () => {
           <table className="w-full text-left border-collapse">
               <thead>
                   <tr className="bg-gray-50/50">
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Item Details</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Storage Unit</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Selling Price</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Purchase</th>
-                      <th className="px-6 py-4 text-right border-b border-gray-50"></th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Item / Code</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Category</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">HSN</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Godown</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Stock</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Sale Price</th>
+                      <th className="px-6 py-4 text-right border-b border-gray-50 w-24"></th>
                   </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                   {currentItems.map((item) => (
                       <tr key={item._id} className="group hover:bg-indigo-50/20 transition-all">
                           <td className="px-6 py-4">
-                              <p className="font-bold text-gray-900 text-sm">{item.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-[10px] text-gray-400 font-bold tracking-tight uppercase">Code: {item.code}</span>
-                                  <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                                  <span className="text-[10px] text-indigo-500 font-black tracking-tight uppercase">{item.category}</span>
-                              </div>
+                              <p className="font-bold text-gray-900 text-sm whitespace-nowrap">{item.name}</p>
+                              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest tracking-tighter">Code: {item.code || '-'}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                              <span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100">
+                                  {item.category || 'Uncategorized'}
+                              </span>
+                          </td>
+                          <td className="px-6 py-4">
+                              <span className="text-[11px] font-bold text-gray-600 font-mono italic">{item.hsn || '-'}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                                  {(() => {
+                                      if (!item.godown) return 'Primary';
+                                      // Try to match by ID first
+                                      const matchedGodown = godowns.find(g => (g._id || g.id) === item.godown);
+                                      if (matchedGodown) return matchedGodown.name;
+                                      // If no ID match, check if it's stored as name or "Name (Type)"
+                                      const godownStr = String(item.godown);
+                                      // Extract name from "Name (Type)" format
+                                      const nameMatch = godownStr.match(/^(.+?)\s*\(/);
+                                      return nameMatch ? nameMatch[1] : godownStr;
+                                  })()}
+                               </span>
                           </td>
                           <td className="px-6 py-4">
                               <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
                                   {item.stock} {item.unit}
                               </span>
                           </td>
-                          <td className="px-6 py-4 text-right font-bold text-sm text-gray-900 italic tabular-nums">₹{item.sellingPrice ? item.sellingPrice.toLocaleString() : 0}</td>
-                          <td className="px-6 py-4 text-right font-bold text-sm text-gray-400 italic tabular-nums">₹{item.purchasePrice ? item.purchasePrice.toLocaleString() : 0}</td>
+                          <td className="px-6 py-4 text-right">
+                              <div className="flex flex-col items-end">
+                                  <p className="font-black text-sm text-gray-900 tabular-nums italic">₹{item.sellingPrice?.toLocaleString()}</p>
+                                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Buy: ₹{item.purchasePrice?.toLocaleString()}</p>
+                              </div>
+                          </td>
                           <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-blue-600 transition-all"><Eye size={16} /></button>
@@ -548,9 +695,21 @@ const Inventory = () => {
                   <div className="flex justify-between items-start mb-3">
                       <div className="flex-1 min-w-0 mr-4">
                           <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
-                          <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
                               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">#{item.code}</span>
+                              <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">HSN: {item.hsn || '-'}</span>
                               <span className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">{item.category}</span>
+                              <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-bold uppercase tracking-widest">
+                                  {(() => {
+                                      if (!item.godown) return 'PRI';
+                                      const matchedGodown = godowns.find(g => (g._id || g.id) === item.godown);
+                                      if (matchedGodown) return matchedGodown.name.substring(0, 3).toUpperCase();
+                                      const godownStr = String(item.godown);
+                                      const nameMatch = godownStr.match(/^(.+?)\s*\(/);
+                                      const name = nameMatch ? nameMatch[1] : godownStr;
+                                      return name.substring(0, 3).toUpperCase();
+                                  })()}
+                              </span>
                           </div>
                       </div>
                       <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
@@ -594,9 +753,9 @@ const Inventory = () => {
 
       {/* Item Add/Edit Modal */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
+                <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50 bg-gray-50/50 shrink-0">
                     <h3 className="text-lg font-bold text-gray-900">{isEditingItem ? 'Edit Item' : 'New Item'}</h3>
                     <button onClick={() => setShowItemModal(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400"><X size={20} /></button>
                 </div>
@@ -628,20 +787,45 @@ const Inventory = () => {
                              </div>
                          </div>
                          
-                         {/* Category & Unit */}
-                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Category</label>
-                            <input 
-                                list="categories"
-                                type="text"
-                                value={itemFormData.category}
-                                onChange={(e) => setItemFormData({...itemFormData, category: e.target.value})}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
-                                placeholder="Select or type category"
-                            />
-                            <datalist id="categories">
-                                {categories.map(c => <option key={c.id} value={c.name} />)}
-                            </datalist>
+                          {/* Category & Godown */}
+                          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
+                             <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Category <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <select 
+                                        value={itemFormData.category}
+                                        onChange={(e) => setItemFormData({...itemFormData, category: e.target.value})}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Select Category</option>
+                                        {categories
+                                            .filter(c => c.name !== 'All Categories' && c.name !== 'Uncategorized')
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(c => (
+                                                <option key={c.id} value={c.name}>{c.name}</option>
+                                            ))
+                                        }
+                                        <option value="Uncategorized">Uncategorized</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
+                             </div>
+                             <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Storage Location (Godown) <span className="text-red-500">*</span></label>
+                                <div className="relative">
+                                    <select 
+                                        value={itemFormData.godown || ''}
+                                        onChange={(e) => setItemFormData({...itemFormData, godown: e.target.value})}
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Select Godown</option>
+                                        {godowns.map(g => (
+                                            <option key={g._id || g.id} value={g._id || g.id}>{g.name} ({g.type || 'Secondary'})</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
+                             </div>
                          </div>
                          <div>
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Unit</label>
@@ -670,7 +854,7 @@ const Inventory = () => {
                                 placeholder="0"
                              />
                          </div>
-                         <div>
+                          <div>
                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Low Stock Alert Level</label>
                              <input 
                                 type="number"
@@ -679,7 +863,19 @@ const Inventory = () => {
                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
                                 placeholder="0"
                              />
-                         </div>
+                          </div>
+
+                          {/* HSN Code */}
+                          <div>
+                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">HSN / SAC Code</label>
+                              <input 
+                                 type="text"
+                                 value={itemFormData.hsn || ''}
+                                 onChange={(e) => setItemFormData({...itemFormData, hsn: e.target.value})}
+                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-[#000000] font-bold transition-all text-sm"
+                                 placeholder="Enter HSN Code"
+                              />
+                          </div>
 
                          {/* GST Selection */}
                          <div>
@@ -748,8 +944,8 @@ const Inventory = () => {
                          </div>
                     </div>
                 </div>
-                <div className="px-6 py-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
-                    <button onClick={() => setShowItemModal(false)} className="px-4 py-2 font-bold text-[10px] uppercase tracking-widest text-gray-500">Cancel</button>
+                <div className="px-6 py-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100 shrink-0">
+                    <button onClick={() => setShowItemModal(false)} className="px-4 py-2 font-bold text-[10px] uppercase tracking-widest text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
                     <button 
                       onClick={handleSaveItem}
                       className="px-8 py-2 bg-black text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-all"
@@ -763,16 +959,16 @@ const Inventory = () => {
       
       {/* View Item Modal */}
       {showViewModal && viewedItem && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50 bg-gray-50/50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
+                <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50 bg-gray-50/50 shrink-0 text-left">
                     <div>
                         <h3 className="text-lg font-black text-gray-900">{viewedItem.name}</h3>
                         <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{viewedItem.code}</p>
                     </div>
                     <button onClick={() => setShowViewModal(false)} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 border border-transparent hover:border-gray-200 transition-all"><X size={20} /></button>
                 </div>
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1 text-left">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                         <div className="col-span-2 p-4 bg-indigo-50/50 rounded-xl border border-indigo-50">
                             <div className="flex justify-between items-center">
@@ -808,6 +1004,22 @@ const Inventory = () => {
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GST Applied</p>
                             <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${viewedItem.gstRate && viewedItem.gstRate !== 'None' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-gray-100 text-gray-500'}`}>
                                 {viewedItem.gstRate || 'None'}
+                            </span>
+                        </div>
+
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">HSN Code</p>
+                            <p className="text-sm font-bold text-gray-700">{viewedItem.hsn || 'N/A'}</p>
+                        </div>
+                        
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Godown Location</p>
+                            <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg text-xs font-bold text-purple-700 shadow-sm border border-purple-100 inline-block">
+                                {(() => {
+                                    if (!viewedItem.godown) return 'Primary';
+                                    const matchedGodown = godowns.find(g => g._id === viewedItem.godown);
+                                    return matchedGodown ? matchedGodown.name : (viewedItem.godown || 'Primary');
+                                })()}
                             </span>
                         </div>
                         
@@ -875,31 +1087,88 @@ const Inventory = () => {
 
       {/* Category Modal (Existing) */}
       {showCategoryModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
                 <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50">
-                    <h3 className="text-lg font-bold text-gray-900">{editingCategory ? 'Edit Category' : 'New Category'}</h3>
-                    <button onClick={() => setShowCategoryModal(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400"><X size={20} /></button>
-                </div>
-                <div className="p-6">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Category Name</label>
-                    <input 
-                      type="text" 
-                      value={categoryName}
-                      onChange={(e) => setCategoryName(e.target.value)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 font-bold transition-all text-sm"
-                      placeholder="Ex: Pharma, Feed, etc."
-                      autoFocus
-                    />
-                </div>
-                <div className="px-6 py-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
-                    <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 font-bold text-[10px] uppercase tracking-widest text-gray-500">Cancel</button>
+                    <h3 className="text-lg font-bold text-gray-900">Manage Categories</h3>
                     <button 
-                      onClick={handleSaveCategory}
-                      className="px-8 py-2 bg-black text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-all"
+                        onClick={() => {
+                            setShowCategoryModal(false);
+                            setEditingCategory(null);
+                            setCategoryName('');
+                        }} 
+                        className="p-1 rounded-full hover:bg-gray-100 text-gray-400"
                     >
-                        Save Category
+                        <X size={20} />
                     </button>
+                </div>
+                
+                {/* Category List */}
+                <div className="p-6 max-h-[40vh] overflow-y-auto custom-scrollbar border-b border-gray-50">
+                    <div className="space-y-2">
+                        {categories.filter(c => c.name !== 'All Categories').map((cat) => (
+                            <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group hover:bg-indigo-50 transition-all border border-transparent hover:border-indigo-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-indigo-600 font-bold text-xs shadow-sm border border-gray-100">
+                                        {cat.count}
+                                    </div>
+                                    <p className="font-bold text-gray-700 text-sm uppercase tracking-tight">{cat.name}</p>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => startEditCategory(cat)}
+                                        className="p-2 text-gray-400 hover:text-black hover:bg-white rounded-lg transition-all"
+                                        title={cat.id.toString().startsWith('adhoc-') ? "Claim this ad-hoc category" : "Edit category"}
+                                    >
+                                        <Pencil size={14} />
+                                    </button>
+                                    {!cat.id.toString().startsWith('adhoc-') && cat.id !== 'uncat' && (
+                                        <button 
+                                            onClick={() => handleDeleteCategory(cat)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all"
+                                            title="Delete category"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Add/Edit Form */}
+                <div className="p-6 bg-gray-50/50">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">
+                        {editingCategory ? 'Update Category' : 'Add New Category'}
+                    </label>
+                    <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={categoryName}
+                          onChange={(e) => setCategoryName(e.target.value)}
+                          className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-black font-bold transition-all text-sm"
+                          placeholder="Ex: Pharma, Feed, etc."
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveCategory()}
+                        />
+                        <button 
+                          onClick={handleSaveCategory}
+                          className="px-6 py-3 bg-black text-white rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-black/10 active:scale-95 transition-all"
+                        >
+                            {editingCategory ? 'Update' : 'Add'}
+                        </button>
+                        {editingCategory && (
+                            <button 
+                                onClick={() => {
+                                    setEditingCategory(null);
+                                    setCategoryName('');
+                                }}
+                                className="px-4 py-3 bg-white border border-gray-200 text-gray-500 rounded-xl font-bold text-[10px] uppercase tracking-widest"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

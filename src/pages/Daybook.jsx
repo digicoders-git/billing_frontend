@@ -19,7 +19,9 @@ const Daybook = () => {
   const [filters, setFilters] = useState({
     staff: 'All Staff',
     period: 'This Week',
-    type: 'All Transactions'
+    type: 'All Transactions',
+    startDate: '',
+    endDate: ''
   });
 
   useEffect(() => {
@@ -100,6 +102,12 @@ const Daybook = () => {
     } else if (filters.period === 'This Year') {
       const yearStart = new Date(now.getFullYear(), 0, 1);
       filtered = filtered.filter(t => t.date >= yearStart);
+    } else if (filters.period === 'Custom Range' && filters.startDate && filters.endDate) {
+      const start = new Date(filters.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(filters.endDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(t => t.date >= start && t.date <= end);
     }
     // 'All Time' shows everything
 
@@ -270,9 +278,35 @@ const Daybook = () => {
                   <option>This Month</option>
                   <option>This Year</option>
                   <option>All Time</option>
+                  <option>Custom Range</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
+
+              {/* Custom Date Range Inputs */}
+              {filters.period === 'Custom Range' && (
+                <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-1.5 animate-fade-in shadow-sm">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">From</span>
+                    <input 
+                      type="date" 
+                      value={filters.startDate}
+                      onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                      className="text-xs font-medium outline-none bg-transparent"
+                    />
+                  </div>
+                  <div className="w-px h-6 bg-gray-200"></div>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">To</span>
+                    <input 
+                      type="date" 
+                      value={filters.endDate}
+                      onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                      className="text-xs font-medium outline-none bg-transparent"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Type Filter */}
               <div className="relative">
@@ -324,7 +358,7 @@ const Daybook = () => {
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Daybook Report</h1>
             <p className="text-sm text-gray-600">
-              Period: {filters.period} | Type: {filters.type} | Staff: {filters.staff}
+              Period: {filters.period === 'Custom Range' ? `${filters.startDate} to ${filters.endDate}` : filters.period} | Type: {filters.type} | Staff: {filters.staff}
             </p>
             <p className="text-sm text-gray-600 mt-1">
               Net Amount: <span className="font-bold">₹ {netAmount.toLocaleString()}</span> | 

@@ -5,10 +5,11 @@ import {
     Plus, Search, ChevronDown, 
     MoreVertical, Settings, Keyboard, 
     Calendar, FileText, IndianRupee, 
-    CheckCircle2, AlertCircle
+    CheckCircle2, AlertCircle, Pencil, Trash2, Printer
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
+import Swal from 'sweetalert2';
 import useUserPermissions from '../hooks/useUserPermissions';
 
 const SalesInvoices = () => {
@@ -47,6 +48,29 @@ const SalesInvoices = () => {
             // Swal.fire('Error', 'Failed to fetch invoices', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteInvoice = async (id) => {
+        const result = await Swal.fire({
+            title: 'Delete Invoice?',
+            text: "This action cannot be undone. It will restore stock and adjust party balance.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#000',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/invoices/${id}`);
+                setItems(prev => prev.filter(inv => inv.id !== id));
+                Swal.fire('Deleted!', 'Invoice has been removed.', 'success');
+            } catch (error) {
+                console.error('Error deleting invoice:', error);
+                Swal.fire('Error', error.response?.data?.message || 'Failed to delete invoice', 'error');
+            }
         }
     };
 
@@ -237,14 +261,12 @@ const SalesInvoices = () => {
                 </div>
 
                 {/* Table Section - Desktop */}
-                <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50/50 border-b border-gray-100">
                                 <tr className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                                    <th className="px-6 py-4 w-10">
-                                        <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                    </th>
+
                                     <th className="px-6 py-4">Date <ChevronDown size={12} className="inline ml-1" /></th>
                                     <th className="px-6 py-4">Invoice Number</th>
                                     <th className="px-6 py-4">Party Name</th>
@@ -255,18 +277,25 @@ const SalesInvoices = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {filteredItems.length === 0 ? (
+                                {loading ? (
                                     <tr>
-                                        <td colSpan="8" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
+                                        <td colSpan="7" className="px-6 py-10 text-center">
+                                            <div className="flex justify-center items-center gap-2 text-indigo-600 font-bold uppercase tracking-widest text-xs">
+                                                <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                                Loading Invoices...
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : filteredItems.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
                                             No Invoices Found
                                         </td>
                                     </tr>
                                 ) : (
                                     filteredItems.map((item) => (
                                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-4">
-                                                <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                            </td>
+
                                             <td className="px-6 py-4 text-sm text-gray-600 font-medium">{new Date(item.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600 font-medium">{item.invoiceNo}</td>
                                             <td className="px-6 py-4 text-sm text-gray-800 font-black uppercase tracking-tight">{item.partyName}</td>
@@ -287,12 +316,41 @@ const SalesInvoices = () => {
                                                     {item.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                {(canEdit || canDelete) && (
-                                                    <button className="p-1.5 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all">
-                                                        <MoreVertical size={18} />
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <button 
+                                                        onClick={() => navigate(`/view-invoice/${item.id}`)}
+                                                        className="p-2 text-indigo-600 bg-indigo-50 hover:bg-white rounded-lg transition-all"
+                                                        title="View Invoice"
+                                                    >
+                                                        <FileText size={18} />
                                                     </button>
-                                                )}
+                                                    {canEdit && (
+                                                        <button 
+                                                            onClick={() => navigate(`/edit-invoice/${item.id}`)}
+                                                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all"
+                                                            title="Edit Invoice"
+                                                        >
+                                                            <Pencil size={18} />
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => navigate(`/invoice-pdf/${item.id}`)}
+                                                        className="p-2 text-gray-400 hover:text-green-600 hover:bg-white rounded-lg transition-all"
+                                                        title="Print / Download"
+                                                    >
+                                                        <Printer size={18} />
+                                                    </button>
+                                                    {canDelete && (
+                                                        <button 
+                                                            onClick={() => handleDeleteInvoice(item.id)}
+                                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-white rounded-lg transition-all"
+                                                            title="Delete Invoice"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -342,12 +400,39 @@ const SalesInvoices = () => {
                                 </div>
 
                                 <div className="flex gap-2 pt-2">
-                                    <button className="flex-1 py-2 text-xs font-black text-[#4F46E5] bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all uppercase tracking-wider">
-                                        View Details
+                                    <button 
+                                        onClick={() => navigate(`/view-invoice/${item.id}`)}
+                                        className="flex-1 py-2 text-xs font-black text-[#4F46E5] bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+                                    >
+                                        <FileText size={14} /> View Details
                                     </button>
-                                    <button className="p-2 text-gray-400 hover:text-gray-600 border border-gray-100 rounded-lg">
-                                        <MoreVertical size={18} />
-                                    </button>
+                                    <div className="flex gap-1">
+                                        {canEdit && (
+                                            <button 
+                                                onClick={() => navigate(`/edit-invoice/${item.id}`)}
+                                                className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
+                                                title="Edit"
+                                            >
+                                                <Pencil size={18} />
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => navigate(`/invoice-pdf/${item.id}`)}
+                                            className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-all"
+                                            title="Print"
+                                        >
+                                            <Printer size={18} />
+                                        </button>
+                                        {canDelete && (
+                                            <button 
+                                                onClick={() => handleDeleteInvoice(item.id)}
+                                                className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-all"
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))

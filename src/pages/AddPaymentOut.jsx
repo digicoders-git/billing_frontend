@@ -21,6 +21,7 @@ const AddPaymentOut = () => {
         amount: '',
         date: new Date().toISOString().split('T')[0],
         paymentMode: 'Bank Transfer',
+        utrNumber: '', // UTR/Transaction Reference Number
         receiptNo: '',
         notes: '',
         type: 'Payment Out'
@@ -158,11 +159,9 @@ const AddPaymentOut = () => {
 
                         {/* Form Body */}
                         <div className="lg:col-span-12 space-y-6">
-                            <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden p-6 sm:p-12 relative group min-h-[500px]">
-                                {/* Animated background element */}
-                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-indigo-50/20 to-transparent rounded-full blur-3xl -mr-64 -mt-64 group-hover:scale-110 transition-transform duration-1000" />
+                            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     {/* Left Column: Vendor Selection & Basic Details */}
                                     <div className="space-y-8">
                                         <div className="space-y-3">
@@ -174,28 +173,25 @@ const AddPaymentOut = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="relative group/search">
+                                            <div className="relative">
                                                 <div 
-                                                    className={cn(
-                                                        "w-full h-20 flex justify-between items-center px-8 bg-gray-50 border-2 border-transparent rounded-[24px] cursor-pointer hover:bg-white hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-500/10 transition-all outline-none",
-                                                        showPartyDropdown && "bg-white border-indigo-200 shadow-xl shadow-indigo-500/10"
-                                                    )}
+                                                    className="w-full flex justify-between items-center px-6 py-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:border-indigo-300 transition-all"
                                                     onClick={() => setShowPartyDropdown(!showPartyDropdown)}
                                                 >
-                                                    <div className="flex items-center gap-5 overflow-hidden">
-                                                        <div className={cn("p-3 rounded-xl transition-all", formData.party ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-white text-gray-300 shadow-sm")}>
-                                                            <Truck size={24} />
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("p-2 rounded-lg", formData.party ? "bg-indigo-600 text-white" : "bg-white text-gray-300 border border-gray-200")}>
+                                                            <Truck size={20} />
                                                         </div>
-                                                        <div className="flex flex-col overflow-hidden">
-                                                            <span className={cn("text-base font-black uppercase tracking-tight truncate", formData.partyName ? "text-gray-900" : "text-gray-300")}>
-                                                                {formData.partyName || "CHOOSE VENDOR ACCOUNT"}
+                                                        <div className="flex flex-col">
+                                                            <span className={cn("text-sm font-bold", formData.partyName ? "text-gray-900" : "text-gray-400")}>
+                                                                {formData.partyName || "Select Vendor"}
                                                             </span>
                                                             {formData.party && (
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase mt-0.5 tracking-widest">Active Ledger linked</span>
+                                                                <span className="text-xs text-gray-400 mt-0.5">Vendor selected</span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <ChevronDown size={24} className={cn("text-gray-300 transition-transform duration-500 ml-4", showPartyDropdown && "rotate-180")} />
+                                                    <ChevronDown size={20} className={cn("text-gray-400 transition-transform", showPartyDropdown && "rotate-180")} />
                                                 </div>
 
                                                 {showPartyDropdown && (
@@ -272,27 +268,27 @@ const AddPaymentOut = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Payment Date</label>
-                                                <div className="relative group/date">
-                                                    <Calendar size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/date:text-indigo-500 transition-colors" />
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-600 uppercase block">Payment Date</label>
+                                                <div className="relative">
+                                                    <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                                     <input 
                                                         type="date" 
-                                                        className="w-full h-16 pl-16 pr-6 bg-gray-50 border-2 border-transparent rounded-[20px] text-[14px] font-black text-gray-700 hover:bg-white hover:border-indigo-100 focus:bg-white focus:border-indigo-500 shadow-sm focus:shadow-xl transition-all uppercase cursor-pointer outline-none"
+                                                        className="w-full h-12 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-white hover:border-indigo-300 focus:bg-white focus:border-indigo-500 outline-none transition-all"
                                                         value={formData.date}
                                                         onChange={(e) => setFormData({...formData, date: e.target.value})}
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Ref / Receipt ID</label>
-                                                <div className="relative group/ref">
-                                                    <Receipt size={22} className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/ref:text-indigo-500 transition-colors" />
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-600 uppercase block">Receipt ID</label>
+                                                <div className="relative">
+                                                    <Receipt size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                                     <input 
                                                         type="text" 
                                                         readOnly
-                                                        className="w-full h-16 pl-16 px-6 bg-gray-100 border-2 border-transparent rounded-[20px] text-[14px] font-black text-gray-400 cursor-not-allowed outline-none italic"
+                                                        className="w-full h-12 pl-11 pr-4 bg-gray-100 border border-gray-200 rounded-lg text-sm font-bold text-gray-500 cursor-not-allowed outline-none"
                                                         value={formData.receiptNo}
                                                     />
                                                 </div>
@@ -301,53 +297,76 @@ const AddPaymentOut = () => {
                                     </div>
 
                                     {/* Right Column: Amount & Payment Mode */}
-                                    <div className="space-y-8 lg:border-l lg:border-gray-50 lg:pl-12">
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-center px-1">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[4px]">Transaction Amount</label>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded uppercase tracking-tighter animate-pulse">Cash Out</span>
-                                                </div>
+                                    <div className="space-y-6 lg:border-l lg:border-gray-50 lg:pl-12">
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
+                                                <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded uppercase">Payment Out</span>
                                             </div>
-                                            <div className="relative group/amount">
-                                                <div className="absolute left-8 top-1/2 -translate-y-1/2 font-black text-4xl text-red-500 italic opacity-50 group-focus-within/amount:opacity-100 transition-opacity">₹</div>
+                                            <div className="relative">
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-2xl text-red-500">₹</div>
                                                 <input 
                                                     type="number" 
                                                     placeholder="0.00"
-                                                    className="w-full h-32 pl-16 pr-10 bg-red-50 border-2 border-transparent rounded-[32px] text-5xl font-black text-gray-900 focus:bg-white focus:border-red-500 focus:shadow-[0_20px_50px_rgba(239,68,68,0.15)] transition-all outline-none italic placeholder:text-red-200"
+                                                    className="w-full h-20 pl-12 pr-6 bg-red-50 border-2 border-red-100 rounded-xl text-3xl font-bold text-gray-900 focus:bg-white focus:border-red-500 outline-none transition-all placeholder:text-red-200"
                                                     value={formData.amount}
                                                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Payment Method</label>
-                                                <div className="relative group/mode">
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-600 uppercase block">Payment Method</label>
+                                                <div className="relative">
                                                     <select 
-                                                        className="w-full h-16 pl-8 pr-12 bg-gray-50 border-2 border-transparent rounded-[20px] text-[13px] font-black text-gray-800 appearance-none hover:bg-white hover:border-indigo-100 focus:bg-white focus:border-indigo-500 shadow-sm focus:shadow-xl outline-none transition-all uppercase tracking-[2px] cursor-pointer"
+                                                        className="w-full h-12 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-800 appearance-none hover:bg-white hover:border-indigo-300 focus:bg-white focus:border-indigo-500 outline-none transition-all cursor-pointer"
                                                         value={formData.paymentMode}
-                                                        onChange={(e) => setFormData({...formData, paymentMode: e.target.value})}
+                                                        onChange={(e) => setFormData({...formData, paymentMode: e.target.value, utrNumber: ''})}
                                                     >
-                                                        <option value="Cash">Cash Handover</option>
+                                                        <option value="Cash">Cash</option>
                                                         <option value="Online">Online / UPI</option>
-                                                        <option value="Bank Transfer">Bank Transfer / NEFT</option>
-                                                        <option value="Cheque">Bank Cheque</option>
+                                                        <option value="Bank Transfer">Bank Transfer</option>
+                                                        <option value="Cheque">Cheque</option>
                                                     </select>
-                                                    <ChevronDown size={22} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none group-focus-within/mode:text-indigo-500 transition-colors" />
+                                                    <ChevronDown size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Personal Notes</label>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-gray-600 uppercase block">Notes</label>
                                                 <textarea 
-                                                    className="w-full h-16 px-8 py-5 bg-gray-50 border-2 border-transparent rounded-[20px] text-[12px] font-bold text-gray-600 focus:bg-white focus:border-indigo-500 shadow-sm focus:shadow-xl outline-none transition-all resize-none overflow-hidden placeholder:italic uppercase"
-                                                    placeholder="REMARKS ..."
+                                                    className="w-full h-12 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none placeholder:text-gray-400"
+                                                    placeholder="Add remarks..."
                                                     value={formData.notes}
                                                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
                                                 />
                                             </div>
                                         </div>
+
+                                        {/* UTR Number Field - Shows only for Online/UPI or Bank Transfer */}
+                                        {(formData.paymentMode === 'Online' || formData.paymentMode === 'Bank Transfer') && (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <label className="text-xs font-bold text-indigo-600 uppercase block flex items-center gap-2">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                                                    UTR / Transaction Reference
+                                                </label>
+                                                <div className="relative">
+                                                    <Receipt size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400" />
+                                                    <input 
+                                                        type="text" 
+                                                        className="w-full h-12 pl-11 pr-4 bg-indigo-50 border border-indigo-200 rounded-lg text-sm font-medium text-gray-800 hover:bg-white hover:border-indigo-400 focus:bg-white focus:border-indigo-500 outline-none transition-all placeholder:text-indigo-300"
+                                                        placeholder="Enter UTR number..."
+                                                        value={formData.utrNumber}
+                                                        onChange={(e) => setFormData({...formData, utrNumber: e.target.value})}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-indigo-500 flex items-center gap-1">
+                                                    <HelpCircle size={12} />
+                                                    Transaction reference for {formData.paymentMode}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 

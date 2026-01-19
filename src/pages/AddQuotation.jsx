@@ -5,10 +5,17 @@ import {
   Save, Plus, Trash2, User, Calendar, 
   Hash, FileText, Settings, Keyboard, 
   ArrowLeft, Search, ScanBarcode, X,
-  ChevronDown, Box
+  ChevronDown, Box, Package
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+
+const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 28% + Cess @ 60%"
+];
 
 const AddQuotation = () => {
   const navigate = useNavigate();
@@ -16,6 +23,11 @@ const AddQuotation = () => {
   const [parties, setParties] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // Item Picker Modal State
+  const [showItemPicker, setShowItemPicker] = useState(false);
+  const [activeItemIndex, setActiveItemIndex] = useState(null);
+  const [itemPickerSearch, setItemPickerSearch] = useState('');
 
   // Fetch API Data
   useEffect(() => {
@@ -36,12 +48,12 @@ const AddQuotation = () => {
   }, []);
 
   const [formData, setFormData] = useState({
-    quotationNo: '', // Will generate
+    quotationNo: '',
     date: new Date().toISOString().split('T')[0],
     validFor: '30',
     party: null,
     items: [
-      { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', rate: 0, discount: 0, tax: 0, amount: 0 }
+      { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', gstAmount: 0, amount: 0 }
     ],
     notes: '',
     terms: '1. Goods once sold will not be taken back or exchanged\n2. All disputes are subject to [SIDDHARTH NAGAR] jurisdiction only.',
@@ -53,10 +65,6 @@ const AddQuotation = () => {
 
   const [searchParty, setSearchParty] = useState('');
   const [showPartyDropdown, setShowPartyDropdown] = useState(false);
-  
-  // Item Autocomplete State
-  const [activeItemSearchIndex, setActiveItemSearchIndex] = useState(null);
-  const [itemSearchTerm, setItemSearchTerm] = useState('');
 
   // Generate Quotation No
   useEffect(() => {
@@ -82,11 +90,32 @@ const AddQuotation = () => {
       const newItems = prev.items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
-          // Calc Amount
-          const baseAmount = (parseFloat(updatedItem.qty) || 0) * (parseFloat(updatedItem.rate) || 0);
-          const discAmount = (baseAmount * (parseFloat(updatedItem.discount) || 0)) / 100;
-          // You could add tax calc here if needed
-          updatedItem.amount = baseAmount - discAmount;
+          
+          // Calculate amount with GST
+          const qty = parseFloat(updatedItem.qty) || 0;
+          const rate = parseFloat(updatedItem.rate) || 0;
+          const discPercent = parseFloat(updatedItem.discount) || 0;
+          const gstStr = updatedItem.gstRate || 'None';
+          
+          // Extract GST percentage
+          let gstPercent = 0;
+          if (gstStr.includes('@')) {
+              const matches = gstStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+              if (matches) {
+                  gstPercent = matches.reduce((acc, val) => {
+                      const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                      return acc + (isNaN(num) ? 0 : num);
+                  }, 0);
+              }
+          }
+          
+          const baseAmount = qty * rate;
+          const discAmount = (baseAmount * discPercent) / 100;
+          const taxableAmount = baseAmount - discAmount;
+          const gstAmount = (taxableAmount * gstPercent) / 100;
+          
+          updatedItem.gstAmount = gstAmount;
+          updatedItem.amount = taxableAmount + gstAmount;
           return updatedItem;
         }
         return item;
@@ -95,29 +124,38 @@ const AddQuotation = () => {
     });
   };
 
-  const selectItem = (index, itemData) => {
+  const selectItemFromPicker = (itemData) => {
+      if (activeItemIndex === null) return;
+      
       setFormData(prev => {
           const newItems = [...prev.items];
-          newItems[index] = {
-              ...newItems[index],
+          const qty = newItems[activeItemIndex].qty || 1;
+          const rate = itemData.sellingPrice || 0;
+          
+          newItems[activeItemIndex] = {
+              ...newItems[activeItemIndex],
               itemId: itemData._id,
               name: itemData.name,
               code: itemData.code,
               hsn: itemData.hsn || '',
-              rate: itemData.sellingPrice || 0,
+              mrp: itemData.mrp || 0,
+              rate: rate,
+              gstRate: itemData.gstRate || 'None',
               unit: itemData.unit || 'PCS',
-              amount: (itemData.sellingPrice || 0) * (newItems[index].qty || 1)
+              amount: rate * qty
           };
           return { ...prev, items: newItems };
       });
-      setActiveItemSearchIndex(null);
-      setItemSearchTerm('');
+      
+      setShowItemPicker(false);
+      setActiveItemIndex(null);
+      setItemPickerSearch('');
   };
 
   const addItemRow = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', rate: 0, discount: 0, tax: 0, amount: 0 }]
+      items: [...prev.items, { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', gstAmount: 0, amount: 0 }]
     }));
   };
 
@@ -165,6 +203,9 @@ const AddQuotation = () => {
                 hsn: item.hsn,
                 qty: parseFloat(item.qty),
                 unit: item.unit,
+                mrp: parseFloat(item.mrp) || 0,
+                gstRate: item.gstRate,
+                gstAmount: parseFloat(item.gstAmount) || 0,
                 rate: parseFloat(item.rate),
                 discount: parseFloat(item.discount),
                 tax: parseFloat(item.tax),
@@ -194,6 +235,14 @@ const AddQuotation = () => {
         setLoading(false);
     }
   };
+
+  // Filtered items for picker
+  const filteredPickerItems = useMemo(() => {
+      return items.filter(item => 
+          item.name.toLowerCase().includes(itemPickerSearch.toLowerCase()) ||
+          (item.code && item.code.toLowerCase().includes(itemPickerSearch.toLowerCase()))
+      );
+  }, [items, itemPickerSearch]);
 
   return (
     <DashboardLayout>
@@ -261,9 +310,13 @@ const AddQuotation = () => {
                           }}
                           onFocus={() => setShowPartyDropdown(true)}
                         />
-                        <div className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center shrink-0 shadow-lg shadow-black/20">
+                        <button 
+                            onClick={() => navigate('/add-party', { state: { returnTo: '/add-quotation' } })}
+                            className="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center shrink-0 shadow-lg shadow-black/20 hover:bg-gray-800 transition-colors"
+                            title="Add New Party"
+                        >
                             <Plus size={16} />
-                        </div>
+                        </button>
                       </div>
                       
                       {showPartyDropdown && searchParty.length > 0 && (
@@ -313,106 +366,106 @@ const AddQuotation = () => {
               </div>
 
               {/* Items Section */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-visible">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse">
-                    <thead className="bg-[#F8FAFC] border-b border-gray-200 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      <tr>
-                        <th className="px-4 py-4 text-left w-12">NO</th>
-                        <th className="px-4 py-4 text-left min-w-[200px]">ITEMS/ SERVICES</th>
-                        <th className="px-4 py-4 text-left w-24">HSN/ SAC</th>
-                        <th className="px-4 py-4 text-center w-20">QTY</th>
-                        <th className="px-4 py-4 text-right w-32">PRICE (₹)</th>
-                        <th className="px-4 py-4 text-right w-24">DISC %</th>
-                        <th className="px-4 py-4 text-right w-32">AMOUNT (₹)</th>
-                        <th className="px-4 py-4 text-center w-10"></th>
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left w-12">NO</th>
+                        <th className="px-4 py-3 text-left min-w-[200px]">ITEMS/ SERVICES</th>
+                        <th className="px-4 py-3 text-left w-24">HSN</th>
+                        <th className="px-4 py-3 text-right w-28">MRP (₹)</th>
+                        <th className="px-4 py-3 text-center w-24">QTY</th>
+                        <th className="px-4 py-3 text-right w-28">PRICE (₹)</th>
+                        <th className="px-4 py-3 text-left w-32">GST</th>
+                        <th className="px-4 py-3 text-right w-24">DISC %</th>
+                        <th className="px-4 py-3 text-right w-32">AMOUNT (₹)</th>
+                        <th className="px-4 py-3 text-center w-10"></th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-gray-100">
                       {formData.items.map((item, index) => (
-                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-4 py-4 text-center text-xs text-gray-300 font-bold">{index + 1}</td>
-                          <td className="px-4 py-4 relative">
-                            {/* Autocomplete Input */}
-                            <input 
-                                type="text"
-                                className="w-full bg-transparent border-none outline-none text-sm font-black text-gray-800 uppercase placeholder:text-gray-300"
-                                placeholder="Search Item..."
-                                value={activeItemSearchIndex === index ? itemSearchTerm : item.name}
-                                onChange={(e) => {
-                                    setActiveItemSearchIndex(index);
-                                    setItemSearchTerm(e.target.value);
-                                    updateItem(item.id, 'name', e.target.value);
+                        <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
+                          <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
+                          <td className="px-4 py-3">
+                            <div 
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm font-medium text-gray-800 hover:border-indigo-400 focus-within:border-indigo-500 transition-all cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                    setActiveItemIndex(index);
+                                    setShowItemPicker(true);
                                 }}
-                                onFocus={() => {
-                                    setActiveItemSearchIndex(index);
-                                    setItemSearchTerm(item.name);
-                                }}
-                                onBlur={() => setTimeout(() => setActiveItemSearchIndex(null), 200)}
-                            />
-                            {/* Dropdown */}
-                            {activeItemSearchIndex === index && itemSearchTerm && (
-                                <div className="absolute top-12 left-0 w-full min-w-[300px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
-                                    {items.filter(i => i.name.toLowerCase().includes(itemSearchTerm.toLowerCase())).map(i => (
-                                        <div 
-                                            key={i._id}
-                                            className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex justify-between items-center"
-                                            onMouseDown={() => selectItem(index, i)}
-                                        >
-                                            <div>
-                                                <div className="font-bold text-sm text-gray-900">{i.name}</div>
-                                                <div className="text-[10px] text-gray-500">Stock: {i.stock} {i.unit}</div>
-                                            </div>
-                                            <div className="font-bold text-xs text-blue-600">₹{i.sellingPrice}</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            >
+                                {item.name ? (
+                                    <span className="flex-1 truncate">{item.name}</span>
+                                ) : (
+                                    <span className="flex-1 text-gray-400">Search Item...</span>
+                                )}
+                            </div>
                           </td>
-                          <td className="px-2 py-4">
+                          <td className="px-2 py-3">
                             <input 
                               type="text" 
-                              className="w-full bg-transparent border-none outline-none text-xs text-center font-bold text-gray-400"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-center font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               placeholder="HSN"
                               value={item.hsn}
                               onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-4">
-                            <div className="flex items-center justify-center gap-1 bg-white border border-gray-100 rounded-lg p-1 shadow-sm">
+                          <td className="px-2 py-3">
+                            <input 
+                              type="number" 
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                              placeholder="0"
+                              value={item.mrp || ''}
+                              onChange={(e) => updateItem(item.id, 'mrp', e.target.value)}
+                            />
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center justify-center gap-1">
                               <input 
                                 type="number" 
-                                className="w-10 bg-transparent border-none outline-none text-center text-xs font-black text-indigo-600"
+                                className="w-12 bg-transparent border-b border-gray-200 px-1 py-1 text-center text-sm font-bold text-indigo-600 focus:border-indigo-500 outline-none"
                                 value={item.qty}
                                 onChange={(e) => updateItem(item.id, 'qty', e.target.value)}
                               />
-                              <span className="text-[9px] text-gray-400 font-bold">{item.unit}</span>
+                              <span className="text-[9px] text-gray-400 font-medium uppercase">{item.unit}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-4 text-right">
+                          <td className="px-2 py-3">
                              <input 
                               type="number" 
-                              className="w-full bg-transparent border-none outline-none text-right text-sm font-black text-gray-800"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-800 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               value={item.rate}
                               onChange={(e) => updateItem(item.id, 'rate', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-4 text-right">
+                          <td className="px-2 py-3">
+                            <select
+                              value={item.gstRate}
+                              onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all cursor-pointer"
+                            >
+                              {gstOptions.map(opt => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-2 py-3">
                              <input 
                               type="number" 
-                              className="w-full bg-transparent border-none outline-none text-right text-xs font-bold text-gray-400"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-right font-medium text-gray-500 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               value={item.discount}
                               onChange={(e) => updateItem(item.id, 'discount', e.target.value)}
                             />
                           </td>
-                          <td className="px-4 py-4 text-right font-black text-indigo-600 text-sm">
+                          <td className="px-4 py-3 text-right font-bold text-indigo-600 text-sm">
                             ₹ {item.amount.toLocaleString()}
                           </td>
-                          <td className="px-4 py-4 text-center">
+                          <td className="px-2 py-3 text-center">
                              <Trash2 
                                size={16} 
-                               className="text-gray-200 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100"
+                               className="text-gray-300 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100 mx-auto"
                                onClick={() => removeItem(item.id)}
                              />
                           </td>
@@ -422,38 +475,69 @@ const AddQuotation = () => {
                   </table>
                 </div>
 
-                {/* Mobile View Item List - Simplified for brevity but functional */}
+                {/* Mobile View */}
                 <div className="md:hidden divide-y divide-gray-100">
                     {formData.items.map((item, index) => (
                         <div key={item.id} className="p-4 bg-white space-y-3">
-                            <div className="flex justify-between">
-                                <span className="text-[10px] font-bold text-gray-400">ITEM {index + 1}</span>
-                                <button onClick={() => removeItem(item.id)}><X size={16} className="text-gray-400" /></button>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                                <button onClick={() => removeItem(item.id)}><X size={16} className="text-gray-400 hover:text-red-500" /></button>
                             </div>
-                            <input 
-                                type="text"
-                                className="w-full bg-gray-50 border-none rounded p-2 text-sm font-bold"
-                                placeholder="Item Name"
-                                value={item.name}
-                                onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                            />
-                            <div className="flex gap-2">
-                                <input type="number" className="flex-1 bg-gray-50 rounded p-2 text-xs font-bold" placeholder="Qty" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
-                                <input type="number" className="flex-1 bg-gray-50 rounded p-2 text-xs font-bold" placeholder="Rate" value={item.rate} onChange={(e) => updateItem(item.id, 'rate', e.target.value)} />
+                            <div 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 cursor-pointer hover:border-indigo-300 transition-all"
+                                onClick={() => {
+                                    setActiveItemIndex(index);
+                                    setShowItemPicker(true);
+                                }}
+                            >
+                                {item.name || 'Tap to select item...'}
                             </div>
-                            <div className="text-right font-black text-sm">₹ {item.amount}</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                                    <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="HSN" value={item.hsn} onChange={(e) => updateItem(item.id, 'hsn', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.mrp || ''} onChange={(e) => updateItem(item.id, 'mrp', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600" placeholder="1" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Price</label>
+                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.rate} onChange={(e) => updateItem(item.id, 'rate', e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                                    <select value={item.gstRate} onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium">
+                                        {gstOptions.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                                    <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.discount} onChange={(e) => updateItem(item.id, 'discount', e.target.value)} />
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString()}</span>
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Add Item Action Bar */}
-                <div className="p-4 flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 border-t border-gray-100 gap-4">
+                {/* Add Item Button */}
+                <div className="p-4 border-t border-gray-100 bg-gray-50/30">
                   <div 
-                    className="w-full sm:w-auto h-12 flex items-center justify-center gap-3 px-8 border-2 border-dashed border-gray-300 rounded-xl hover:bg-white hover:border-black transition-all cursor-pointer group flex-1 max-w-lg"
+                    className="w-full h-12 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-white hover:border-indigo-400 transition-all cursor-pointer group"
                     onClick={addItemRow}
                   >
-                    <Plus size={20} className="text-gray-400 group-hover:text-black transition-colors" />
-                    <span className="text-sm font-black text-gray-500 group-hover:text-black uppercase tracking-[2px]">Add Item</span>
+                    <Plus size={20} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                    <span className="text-sm font-bold text-gray-500 group-hover:text-indigo-600 uppercase tracking-wider">Add Item</span>
                   </div>
                 </div>
               </div>
@@ -548,7 +632,7 @@ const AddQuotation = () => {
                    
                    <div className="flex justify-between items-center group gap-2">
                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer hover:underline">
+                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
                             <Plus size={10} /> Add Charges
                         </span>
                      </div>
@@ -562,7 +646,7 @@ const AddQuotation = () => {
 
                    <div className="flex justify-between items-center group gap-2">
                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer hover:underline">
+                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
                             <Plus size={10} /> Discount
                         </span>
                         <select 
@@ -607,6 +691,92 @@ const AddQuotation = () => {
           </div>
         </div>
       </div>
+
+      {/* Item Picker Modal */}
+      {showItemPicker && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+                  {/* Modal Header */}
+                  <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center shrink-0">
+                      <div>
+                          <h3 className="text-lg font-black text-gray-900">Select Item</h3>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">Choose from your inventory</p>
+                      </div>
+                      <button 
+                          onClick={() => {
+                              setShowItemPicker(false);
+                              setActiveItemIndex(null);
+                              setItemPickerSearch('');
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-400"
+                      >
+                          <X size={20} />
+                      </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="px-6 py-4 border-b border-gray-100 shrink-0">
+                      <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                          <input 
+                              type="text"
+                              placeholder="Search by item name or code..."
+                              value={itemPickerSearch}
+                              onChange={(e) => setItemPickerSearch(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-all text-sm font-medium"
+                              autoFocus
+                          />
+                      </div>
+                  </div>
+
+                  {/* Items Grid */}
+                  <div className="flex-1 overflow-y-auto p-6">
+                      {filteredPickerItems.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                              <Package size={48} className="mb-4 opacity-50" />
+                              <p className="text-sm font-bold uppercase tracking-wider">No items found</p>
+                          </div>
+                      ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {filteredPickerItems.map(item => (
+                                  <div 
+                                      key={item._id}
+                                      onClick={() => selectItemFromPicker(item)}
+                                      className="bg-white border-2 border-gray-100 rounded-xl p-4 hover:border-indigo-300 hover:shadow-lg transition-all cursor-pointer group"
+                                  >
+                                      <div className="flex items-start justify-between mb-3">
+                                          <div className="flex-1 min-w-0 mr-3">
+                                              <h4 className="font-black text-sm text-gray-900 truncate group-hover:text-indigo-600 transition-colors">{item.name}</h4>
+                                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Code: {item.code || 'N/A'}</p>
+                                          </div>
+                                          <div className="shrink-0 w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                                              <Package size={20} className="text-indigo-500" />
+                                          </div>
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-2 gap-2 mb-3">
+                                          <div className="bg-gray-50 rounded-lg p-2">
+                                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Stock</p>
+                                              <p className="text-xs font-black text-gray-700">{item.stock} {item.unit}</p>
+                                          </div>
+                                          <div className="bg-gray-50 rounded-lg p-2">
+                                              <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">MRP</p>
+                                              <p className="text-xs font-black text-gray-700">₹{item.mrp || 0}</p>
+                                          </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                                          <span className="text-[9px] font-bold text-gray-400 uppercase">Selling Price</span>
+                                          <span className="text-base font-black text-indigo-600">₹{item.sellingPrice || 0}</span>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
     </DashboardLayout>
   );
 };

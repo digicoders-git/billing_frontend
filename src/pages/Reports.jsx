@@ -11,7 +11,10 @@ import {
   TrendingUp,
   DollarSign,
   ShoppingCart,
-  Loader2
+  Loader2,
+  Calendar,
+  X,
+  Search
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/axios';
@@ -81,6 +84,14 @@ const Reports = () => {
   const [filter, setFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // Date range state
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1); // Default to last 1 month
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [data, setData] = useState({
     invoices: [],
     purchases: [],
@@ -123,20 +134,70 @@ const Reports = () => {
     fetchData();
   }, []);
 
+  // Filter data based on date range
+  const filteredData = useMemo(() => {
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(23, 59, 59, 999);
+
+    const filterByDate = (list) => {
+        if (!start && !end) return list;
+        return list.filter(item => {
+            const itemDate = new Date(item.date || item.createdAt);
+            if (start && itemDate < start) return false;
+            if (end && itemDate > end) return false;
+            return true;
+        });
+    };
+
+    return {
+        invoices: filterByDate(data.invoices),
+        purchases: filterByDate(data.purchases),
+        parties: data.parties,
+        items: data.items,
+        payments: filterByDate(data.payments),
+        returns: filterByDate(data.returns)
+    };
+  }, [data, startDate, endDate]);
+
+  const handlePeriodChange = (period) => {
+    const end = new Date();
+    const start = new Date();
+    
+    if (period === 'Today') {
+        // Today
+    } else if (period === 'This Week') {
+        start.setDate(end.getDate() - 7);
+    } else if (period === 'This Month') {
+        start.setMonth(end.getMonth() - 1);
+    } else if (period === 'This Year') {
+        start.setFullYear(end.getFullYear() - 1);
+    } else if (period === 'All Time') {
+        setStartDate('');
+        setEndDate('');
+        return;
+    }
+    
+    setStartDate(start.toISOString().split('T')[0]);
+    setEndDate(end.toISOString().split('T')[0]);
+  };
+
   // Calculate dynamic report data
   const reportData = useMemo(() => {
-    const totalSales = data.invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-    const totalPurchases = data.purchases.reduce((sum, pur) => sum + (pur.totalAmount || 0), 0);
-    const totalPayments = data.payments.reduce((sum, pay) => sum + (pay.amount || 0), 0);
+    const totalSales = filteredData.invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+    const totalPurchases = filteredData.purchases.reduce((sum, pur) => sum + (pur.totalAmount || 0), 0);
+    const totalPayments = filteredData.payments.reduce((sum, pay) => sum + (pay.amount || 0), 0);
     const profit = totalSales - totalPurchases;
 
     // Party-wise calculations
-    const partyWiseData = data.parties.map(party => {
-      const partySales = data.invoices
+    const partyWiseData = filteredData.parties.map(party => {
+      const partySales = filteredData.invoices
         .filter(inv => (inv.party?._id || inv.party) === party._id)
         .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
       
-      const partyPurchases = data.purchases
+      const partyPurchases = filteredData.purchases
         .filter(pur => (pur.party?._id || pur.party) === party._id)
         .reduce((sum, pur) => sum + (pur.totalAmount || 0), 0);
 
@@ -149,13 +210,13 @@ const Reports = () => {
     });
 
     // Item-wise calculations
-    const itemWiseData = data.items.map(item => {
-      const itemSales = data.invoices.reduce((sum, inv) => {
+    const itemWiseData = filteredData.items.map(item => {
+      const itemSales = filteredData.invoices.reduce((sum, inv) => {
         const itemInInvoice = inv.items?.find(i => (i.itemId?._id || i.itemId) === item._id);
         return sum + (itemInInvoice ? itemInInvoice.amount : 0);
       }, 0);
 
-      const itemPurchases = data.purchases.reduce((sum, pur) => {
+      const itemPurchases = filteredData.purchases.reduce((sum, pur) => {
         const itemInPurchase = pur.items?.find(i => (i.itemId?._id || i.itemId) === item._id);
         return sum + (itemInPurchase ? itemInPurchase.amount : 0);
       }, 0);
@@ -191,7 +252,7 @@ const Reports = () => {
         .sort((a, b) => b.sales - a.sales)
         .slice(0, 5)
     };
-  }, [data]);
+  }, [filteredData]);
 
   const filters = [
     "All", "Party", "Item", "Transaction", "Summary", "GST", "Favourite"
@@ -225,12 +286,12 @@ const Reports = () => {
       title: "Sales Reports",
       category: "Transaction",
       icon: <TrendingUp className="text-blue-500" size={20} />,
-      count: data.invoices.length,
+      count: filteredData.invoices.length,
       items: [
         { name: "Sales Summary", value: reportData.totalSales },
         { name: "Sales by Customer", data: reportData.topCustomers },
         { name: "Sales by Item", data: reportData.topSellingItems },
-        { name: "Sales Invoice List", data: data.invoices },
+        { name: "Sales Invoice List", data: filteredData.invoices },
         { name: "Bill Wise Profit" },
       ]
     },
@@ -238,19 +299,19 @@ const Reports = () => {
       title: "Purchase Reports",
       category: "Transaction",
       icon: <ShoppingCart className="text-indigo-500" size={20} />,
-      count: data.purchases.length,
+      count: filteredData.purchases.length,
       items: [
         { name: "Purchase Summary", value: reportData.totalPurchases },
         { name: "Purchase by Supplier", data: reportData.topSuppliers },
         { name: "Purchase by Item" },
-        { name: "Purchase Invoice List", data: data.purchases },
+        { name: "Purchase Invoice List", data: filteredData.purchases },
       ]
     },
     {
       title: "Party Reports",
       category: "Party",
       icon: <Users className="text-purple-500" size={20} />,
-      count: data.parties.length,
+      count: filteredData.parties.length,
       items: [
         { name: "Party Statement (Ledger)" },
         { name: "Party Wise Outstanding", data: reportData.partyWiseData },
@@ -264,7 +325,7 @@ const Reports = () => {
       title: "Item/Stock Reports",
       category: "Item",
       icon: <Package className="text-orange-500" size={20} />,
-      count: data.items.length,
+      count: filteredData.items.length,
       items: [
         { name: "Stock Summary", data: reportData.itemWiseData },
         { name: "Stock Detail Report" },
@@ -291,7 +352,7 @@ const Reports = () => {
       title: "Payment Reports",
       category: "Transaction",
       icon: <DollarSign className="text-emerald-500" size={20} />,
-      count: data.payments.length,
+      count: filteredData.payments.length,
       items: [
         { name: "Daybook" },
         { name: "Cash and Bank Report", value: reportData.totalPayments },
@@ -358,40 +419,103 @@ const Reports = () => {
       <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
       
         {/* Header Stats */}
-        <div className="bg-white border-b border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-black text-gray-900 mb-6">Business Reports</h1>
+        <div className="bg-white border-b border-gray-200 p-6 mb-6 rounded-b-3xl shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Business Reports</h1>
+                <p className="text-gray-500 text-sm mt-1 flex items-center gap-1">
+                    <Calendar size={14} /> 
+                    {startDate && endDate ? (
+                        <span>Showing data from <span className="font-bold text-gray-700">{new Date(startDate).toLocaleDateString()}</span> to <span className="font-bold text-gray-700">{new Date(endDate).toLocaleDateString()}</span></span>
+                    ) : (
+                        "Showing all time data"
+                    )}
+                </p>
+            </div>
+
+            {/* Date Picker Section */}
+            <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-2xl border border-gray-100 shrink-0">
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">From</label>
+                    <input 
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="bg-transparent border-none outline-none text-sm font-bold text-gray-700 px-2"
+                    />
+                </div>
+                <div className="w-px h-8 bg-gray-200"></div>
+                <div className="flex flex-col">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">To</label>
+                    <input 
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="bg-transparent border-none outline-none text-sm font-bold text-gray-700 px-2"
+                    />
+                </div>
+                <button 
+                    onClick={() => {
+                        setStartDate('');
+                        setEndDate('');
+                    }}
+                    className="p-2 hover:bg-gray-200 rounded-xl text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Clear Filter"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-              <div className="text-xs font-semibold text-blue-600 mb-1">Total Sales</div>
-              <div className="text-2xl font-black text-blue-900">₹ {reportData.totalSales.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-5 rounded-2xl shadow-lg shadow-blue-200 text-white transform hover:scale-105 transition-all">
+              <div className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Total Sales</div>
+              <div className="text-2xl font-black">₹ {reportData.totalSales.toLocaleString()}</div>
+              <div className="mt-4 h-1 w-12 bg-white/30 rounded-full"></div>
             </div>
-            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
-              <div className="text-xs font-semibold text-indigo-600 mb-1">Total Purchases</div>
-              <div className="text-2xl font-black text-indigo-900">₹ {reportData.totalPurchases.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-2xl shadow-lg shadow-indigo-200 text-white transform hover:scale-105 transition-all">
+              <div className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Total Purchases</div>
+              <div className="text-2xl font-black">₹ {reportData.totalPurchases.toLocaleString()}</div>
+              <div className="mt-4 h-1 w-12 bg-white/30 rounded-full"></div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
-              <div className="text-xs font-semibold text-green-600 mb-1">Profit</div>
-              <div className="text-2xl font-black text-green-900">₹ {reportData.profit.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-5 rounded-2xl shadow-lg shadow-emerald-200 text-white transform hover:scale-105 transition-all">
+              <div className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Total Profit</div>
+              <div className="text-2xl font-black">₹ {reportData.profit.toLocaleString()}</div>
+              <div className="mt-4 h-1 w-12 bg-white/30 rounded-full"></div>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl border border-purple-200">
-              <div className="text-xs font-semibold text-purple-600 mb-1">Total Payments</div>
-              <div className="text-2xl font-black text-purple-900">₹ {reportData.totalPayments.toLocaleString()}</div>
+            <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-5 rounded-2xl shadow-lg shadow-purple-200 text-white transform hover:scale-105 transition-all">
+              <div className="text-xs font-bold uppercase tracking-widest opacity-80 mb-1">Total Payments</div>
+              <div className="text-2xl font-black">₹ {reportData.totalPayments.toLocaleString()}</div>
+              <div className="mt-4 h-1 w-12 bg-white/30 rounded-full"></div>
             </div>
           </div>
         </div>
 
+        {/* Period Shortcuts */}
+        <div className="px-6 mb-6 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+            {['Today', 'This Week', 'This Month', 'This Year', 'All Time'].map((p) => (
+                <button 
+                    key={p}
+                    onClick={() => handlePeriodChange(p)}
+                    className="px-4 py-1.5 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-500 hover:border-blue-500 hover:text-blue-600 transition-all whitespace-nowrap shadow-sm"
+                >
+                    {p}
+                </button>
+            ))}
+        </div>
+
         {/* Filters */}
         <div className="bg-white px-6 py-4 border-b border-gray-200 flex items-center gap-4 overflow-x-auto rounded-xl shadow-sm mb-6 scrollbar-hide">
-          <span className="text-gray-500 font-medium whitespace-nowrap">Filter By</span>
-          <div className="flex gap-3">
+          <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap">Show Category</span>
+          <div className="flex gap-2">
             {filters.map((f) => (
               <button 
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-full border text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                className={`px-4 py-1 text-xs font-bold rounded-lg border transition-all duration-200 whitespace-nowrap ${
                   filter === f 
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105' 
-                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                    ? 'bg-black text-white border-black' 
+                    : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 {f}

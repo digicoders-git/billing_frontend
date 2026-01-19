@@ -556,11 +556,11 @@ const AddSalesReturn = () => {
                      <span className="text-sm font-black text-gray-800">₹ {totals.subtotal.toLocaleString()}</span>
                    </div>
                    <div className="flex justify-between items-center group gap-2">
-                     <button className="text-[10px] font-black text-indigo-500 uppercase hover:underline">+ Charges</button>
+                     <button className="text-[10px] font-black text-indigo-500 uppercase">+ Charges</button>
                      <input type="number" className="w-20 text-right bg-transparent border-none text-sm font-black outline-none" value={formData.additionalCharges} onChange={e => setFormData({...formData, additionalCharges: parseFloat(e.target.value) || 0})} />
                    </div>
                    <div className="flex justify-between items-center group gap-2">
-                     <button className="text-[10px] font-black text-indigo-500 uppercase hover:underline">+ Discount</button>
+                     <button className="text-[10px] font-black text-indigo-500 uppercase">+ Discount</button>
                      <span className="text-sm font-black text-red-500">- ₹ {totals.discountVal.toLocaleString()}</span>
                    </div>
                 </div>

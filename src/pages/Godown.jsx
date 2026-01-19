@@ -48,21 +48,7 @@ const Godown = () => {
   const fetchItems = async () => {
       try {
           const response = await api.get('/items');
-          setAllGodownItems(response.data.map(item => {
-              const stock = Number(item.stock) || 0;
-              const purchasePrice = Number(item.purchasePrice) || 0;
-              return {
-                  id: item._id,
-                  name: item.name,
-                  code: item.code || 'N/A',
-                  batch: 'STD', // Standard batch default
-                  stock: stock,
-                  unit: item.unit || 'PCS',
-                  value: stock * purchasePrice, // Use Cost for Valuation
-                  selling: item.sellingPrice,
-                  purchase: purchasePrice
-              };
-          }));
+          setAllGodownItems(response.data);
       } catch (error) {
            console.error("Error fetching items", error);
       }
@@ -74,15 +60,99 @@ const Godown = () => {
   }, []);
 
   const selectedGodown = godowns.find(g => g.id === selectedGodownId) || (godowns.length > 0 ? godowns[0] : {});
-  const totalPages = Math.ceil(allGodownItems.length / itemsPerPage);
-  const currentItems = allGodownItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  
+  // Filter Items based on Selected Godown
+  const filteredItems = React.useMemo(() => {
+      console.log('🔍 FILTERING DEBUG:');
+      console.log('Selected Godown ID:', selectedGodownId);
+      console.log('Selected Godown Object:', selectedGodown);
+      console.log('Total Items:', allGodownItems.length);
+      
+      if (!selectedGodownId || !selectedGodown) {
+          console.log('❌ No godown selected, returning empty array');
+          return [];
+      }
+      
+      const filtered = allGodownItems.filter(item => {
+          console.log(`\n📦 Checking item: ${item.name}`);
+          console.log('  Item godown field:', item.godown);
+          console.log('  Item godown type:', typeof item.godown);
+          
+          // If item has no explicit godown assigned
+          if (!item.godown || item.godown === '' || item.godown === null || item.godown === undefined) {
+              const shouldShow = selectedGodown.type === 'Primary';
+              console.log(`  ⚪ No godown assigned. Primary godown? ${shouldShow}`);
+              return shouldShow;
+          }
+          
+          // If item has a godown assigned, match by ID first, then Name
+          const itemGodownStr = String(item.godown).trim();
+          const selectedIdStr = String(selectedGodownId).trim();
+          const selectedNameStr = String(selectedGodown.name || '').trim();
+          
+          const idMatch = itemGodownStr === selectedIdStr;
+          const nameMatch = itemGodownStr === selectedNameStr;
+          // Also check if item godown starts with selected godown name (handles "South Godown (Secondary)" vs "South Godown")
+          const partialNameMatch = itemGodownStr.startsWith(selectedNameStr + ' ') || itemGodownStr.startsWith(selectedNameStr + '(');
+          
+          console.log('  Comparison:');
+          console.log('    Item godown (string):', itemGodownStr);
+          console.log('    Selected ID (string):', selectedIdStr);
+          console.log('    Selected Name (string):', selectedNameStr);
+          console.log('    ID Match:', idMatch);
+          console.log('    Name Match:', nameMatch);
+          console.log('    Partial Name Match:', partialNameMatch);
+          console.log('    Final Result:', (idMatch || nameMatch || partialNameMatch) ? '✅ MATCH' : '❌ NO MATCH');
+          
+          return idMatch || nameMatch || partialNameMatch;
+      });
+      
+      console.log('\n✅ FILTERED RESULT:', filtered.length, 'items');
+      console.log('Filtered items:', filtered.map(i => i.name));
+      
+      return filtered;
+  }, [allGodownItems, selectedGodownId, selectedGodown]);
 
-  // Dynamic Godown Stats
-  const activeStockValue = allGodownItems.reduce((acc, item) => acc + item.value, 0); 
-  const totalStockQuantity = allGodownItems.reduce((acc, item) => acc + item.stock, 0);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const currentItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Dynamic Godown Stats using Filtered Items
+  const activeStockValue = filteredItems.reduce((acc, item) => acc + ((parseFloat(item.stock) || 0) * (parseFloat(item.purchasePrice) || 0)), 0); 
+  const totalStockQuantity = filteredItems.reduce((acc, item) => acc + (parseFloat(item.stock) || 0), 0);
 
   const handleSave = async () => {
-      if (!formData.name) return;
+      const trimmedName = formData.name.trim();
+
+      if (!trimmedName) {
+          Swal.fire('Error', 'Warehouse Name is required', 'error');
+          return;
+      }
+
+      // Block purely numeric names
+      if (!/[a-zA-Z]/.test(trimmedName)) {
+          Swal.fire('Error', 'Warehouse Name must contain at least one letter', 'error');
+          return;
+      }
+
+      if (trimmedName.length < 3) {
+          Swal.fire('Error', 'Warehouse Name must be at least 3 characters long', 'error');
+          return;
+      }
+
+      if (!formData.address || formData.address.trim().length < 5) {
+          Swal.fire('Error', 'Address is required (min 5 characters)', 'error');
+          return;
+      }
+
+      if (!formData.city || formData.city.trim().length < 2) {
+          Swal.fire('Error', 'City is required', 'error');
+          return;
+      }
+
+      if (!/^\d{6}$/.test(formData.pincode)) {
+        Swal.fire('Error', 'Pincode must be exactly 6 digits', 'error');
+        return;
+      }
       
       try {
           const { id, ...payload } = formData;
@@ -276,18 +346,22 @@ const Godown = () => {
                 </div>
                 <div className="space-y-1.5">
                     <div className="flex justify-between text-[8px] font-black text-gray-400 uppercase">
-                        <span>Utilization</span>
-                        <span>Across {allGodownItems.length} Products</span>
+                        <span>Utilization (Live)</span>
+                        <span>{filteredItems.length} of {allGodownItems.length} Products</span>
                     </div>
                      <div className="w-full h-1.5 bg-gray-50 rounded-full overflow-hidden border border-gray-100/50">
-                        <div className="h-full bg-blue-600 rounded-full w-full opacity-20"></div>
+                        <div 
+                          className="h-full bg-blue-600 rounded-full opacity-20 transition-all duration-500" 
+                          style={{ width: `${allGodownItems.length > 0 ? (filteredItems.length / allGodownItems.length) * 100 : 0}%` }}
+                        ></div>
                     </div>
                 </div>
           </div>
       </div>
 
       {/* Item List Seciton */}
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col">
+          {/* Header */}
           <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50 flex justify-between items-center">
               <div>
                   <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Stock Stream</h2>
@@ -308,62 +382,113 @@ const Godown = () => {
                   <thead>
                       <tr className="bg-gray-50/20">
                           <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Product</th>
-                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Batch</th>
+                          <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Code/Batch</th>
                           <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Quantity</th>
                           <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Valuation</th>
                           <th className="px-6 py-4 w-10 border-b border-gray-50"></th>
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                      {currentItems.map((item) => (
-                          <tr key={item.id} className="group hover:bg-indigo-50/20 transition-all">
-                              <td className="px-6 py-4">
-                                  <p className="font-bold text-gray-900 text-sm">{item.name}</p>
-                                  <p className="text-[10px] text-gray-400 font-bold tracking-tight uppercase">SKU: {item.code}</p>
-                              </td>
-                              <td className="px-6 py-4">
-                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-black uppercase tracking-widest">{item.batch}</span>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.stock > 10 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
-                                      {item.stock} {item.unit}
-                                  </span>
-                              </td>
-                              <td className="px-6 py-4 text-right font-bold text-sm text-gray-900 italic tabular-nums">₹{item.value.toLocaleString()}</td>
-                              <td className="px-6 py-4">
-                                  <button className="p-1 text-gray-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"><MoreVertical size={16} /></button>
+                      {filteredItems.length === 0 ? (
+                          <tr>
+                              <td colSpan="5" className="px-6 py-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest italic">
+                                  No items found in this godown
                               </td>
                           </tr>
-                      ))}
+                      ) : (
+                      currentItems.map((item) => { 
+                          const stock = parseFloat(item.stock) || 0;
+                          const price = parseFloat(item.purchasePrice) || 0;
+                          const value = stock * price;
+                          
+                          return (
+                          <tr key={item._id} className="group hover:bg-indigo-50/20 transition-all">
+                              <td className="px-6 py-4">
+                                  <p className="font-bold text-gray-900 text-sm">{item.name}</p>
+                                  <p className="text-[10px] text-gray-400 font-bold tracking-tight uppercase">Cat: {item.category || 'N/A'}</p>
+                              </td>
+                              <td className="px-6 py-4">
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.code || '-'}</span>
+                                    <span className="text-[8px] text-gray-400 font-bold">STD BATCH</span>
+                                  </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${stock > (item.minStock || 5) ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                                      {stock} {item.unit || 'PCS'}
+                                  </span>
+                              </td>
+                              <td className="px-6 py-4 text-right font-bold text-sm text-gray-900 italic tabular-nums">₹{value.toLocaleString()}</td>
+                              <td className="px-6 py-4">
+                                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                      <button 
+                                          onClick={() => {
+                                              Swal.fire({
+                                                  title: item.name,
+                                                  html: `
+                                                      <div class="text-left space-y-2 p-4">
+                                                          <p><b>SKU:</b> ${item.code || 'N/A'}</p>
+                                                          <p><b>Current Stock:</b> ${stock} ${item.unit || 'PCS'}</p>
+                                                          <p><b>Purchase Price:</b> ₹${price}</p>
+                                                          <p><b>Selling Price:</b> ₹${item.sellingPrice || 0}</p>
+                                                          <p><b>Total Valuation:</b> ₹${value.toLocaleString()}</p>
+                                                      </div>
+                                                  `,
+                                                  confirmButtonColor: '#000'
+                                              });
+                                          }}
+                                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-white rounded-xl border border-transparent hover:border-gray-100 transition-all"
+                                          title="View Details"
+                                      >
+                                          <ExternalLink size={16} />
+                                      </button>
+                                  </div>
+                              </td>
+                          </tr>
+                          );
+                      })
+                      )}
                   </tbody>
               </table>
           </div>
 
           {/* Mobile Card Layout */}
           <div className="lg:hidden divide-y divide-gray-50">
-              {currentItems.map((item) => (
-                  <div key={item.id} className="p-4 active:bg-gray-50 transition-colors">
+              {filteredItems.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-xs font-bold uppercase tracking-widest italic">
+                      No items found
+                  </div>
+              ) : (
+              currentItems.map((item) => {
+                  const stock = parseFloat(item.stock) || 0;
+                  const price = parseFloat(item.purchasePrice) || 0;
+                  const value = stock * price;
+                  
+                  return (
+                  <div key={item._id} className="p-4 active:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start mb-2">
                           <div className="flex-1 min-w-0 mr-4">
                               <h3 className="font-bold text-gray-900 text-sm truncate">{item.name}</h3>
-                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">SKU: {item.code}</p>
+                              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">SKU: {item.code || 'N/A'}</p>
                           </div>
-                           <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${item.stock > 10 ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
-                              {item.stock} {item.unit}
+                           <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${stock > (item.minStock || 5) ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                              {stock} {item.unit || 'PCS'}
                           </span>
                       </div>
                       <div className="flex justify-between items-center text-[10px]">
                           <div className="flex items-center gap-1.5">
-                              <span className="text-gray-400 font-bold">BATCH:</span>
-                              <span className="text-indigo-600 font-black tracking-widest">{item.batch}</span>
+                              <span className="text-gray-400 font-bold">CATEGORY:</span>
+                              <span className="text-indigo-600 font-black tracking-widest">{item.category || 'N/A'}</span>
                           </div>
                           <div className="text-right">
                               <span className="text-gray-400 font-bold uppercase mr-2">VALUATION:</span>
-                              <span className="text-gray-900 font-bold italic">₹{item.value.toLocaleString()}</span>
+                              <span className="text-gray-900 font-bold italic">₹{value.toLocaleString()}</span>
                           </div>
                       </div>
                   </div>
-              ))}
+                  );
+              })
+              )}
           </div>
 
           <div className="p-4 border-t border-gray-50 bg-gray-50/30">
@@ -371,7 +496,7 @@ const Godown = () => {
                   currentPage={currentPage}
                   totalPages={totalPages}
                   itemsPerPage={itemsPerPage}
-                  totalItems={allGodownItems.length}
+                  totalItems={filteredItems.length}
                   onPageChange={setCurrentPage}
               />
           </div>
@@ -388,7 +513,7 @@ const Godown = () => {
                 
                 <div className="p-6 space-y-6">
                     <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Godown Identity</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Godown Identity <span className="text-red-500">*</span></label>
                         <input 
                             type="text" 
                             placeholder="Ex: Main Branch Storage"
@@ -399,7 +524,7 @@ const Godown = () => {
                     </div>
 
                     <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Location Details</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Location Details <span className="text-red-500">*</span></label>
                         <textarea 
                             rows={3}
                             placeholder="Street address, landmarks..."
@@ -411,7 +536,7 @@ const Godown = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                          <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">City</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">City <span className="text-red-500">*</span></label>
                             <input 
                                 type="text"
                                 value={formData.city} 
@@ -421,7 +546,7 @@ const Godown = () => {
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Pincode</label>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block mb-2">Pincode <span className="text-red-500">*</span></label>
                             <input 
                                 type="text"
                                 value={formData.pincode}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Godown Data</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #0f0; }
+        .section { margin: 20px 0; padding: 15px; background: #000; border: 1px solid #0f0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+        h2 { color: #ff0; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Godown Data Debugger</h1>
+    <button onclick="fetchData()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">🔄 Fetch & Analyze Data</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function fetchData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                // Fetch Godowns
+                const godownsRes = await fetch('http://localhost:5000/api/godowns');
+                const godowns = await godownsRes.json();
+                
+                // Fetch Items
+                const itemsRes = await fetch('http://localhost:5000/api/items');
+                const items = await itemsRes.json();
+                
+                let html = '';
+                
+                // Show Godowns
+                html += '<div class="section"><h2>📦 GODOWNS (' + godowns.length + ')</h2>';
+                godowns.forEach((g, i) => {
+                    html += '<pre>Godown ' + (i+1) + ':\n';
+                    html += '  _id: ' + g._id + '\n';
+                    html += '  name: ' + g.name + '\n';
+                    html += '  type: ' + g.type + '\n';
+                    html += '  city: ' + g.city + '</pre>';
+                });
+                html += '</div>';
+                
+                // Show Items
+                html += '<div class="section"><h2>📋 ITEMS (' + items.length + ')</h2>';
+                items.forEach((item, i) => {
+                    html += '<pre>Item ' + (i+1) + ':\n';
+                    html += '  _id: ' + item._id + '\n';
+                    html += '  name: ' + item.name + '\n';
+                    html += '  godown: ' + JSON.stringify(item.godown) + '\n';
+                    html += '  godown type: ' + typeof item.godown + '\n';
+                    html += '  stock: ' + item.stock + '\n';
+                    html += '  category: ' + item.category + '</pre>';
+                });
+                html += '</div>';
+                
+                // Analysis
+                html += '<div class="section"><h2>🔬 MATCHING ANALYSIS</h2>';
+                godowns.forEach(godown => {
+                    html += '<h3 style="color: #0ff;">Godown: ' + godown.name + ' (ID: ' + godown._id + ', Type: ' + godown.type + ')</h3>';
+                    
+                    const matchingItems = items.filter(item => {
+                        // Check if item has no godown
+                        if (!item.godown) {
+                            return godown.type === 'Primary';
+                        }
+                        
+                        // Check by ID
+                        const idMatch = String(item.godown) === String(godown._id);
+                        // Check by name
+                        const nameMatch = item.godown === godown.name;
+                        
+                        return idMatch || nameMatch;
+                    });
+                    
+                    html += '<p>Matched Items: ' + matchingItems.length + '</p>';
+                    if (matchingItems.length > 0) {
+                        matchingItems.forEach(item => {
+                            html += '<pre>  ✓ ' + item.name + ' (godown: ' + item.godown + ')</pre>';
+                        });
+                    } else {
+                        html += '<p style="color: #f00;">❌ NO ITEMS MATCHED!</p>';
+                    }
+                });
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<div class="section"><h2 style="color: #f00;">ERROR</h2><pre>' + error.message + '</pre></div>';
+            }
+        }
+    </script>
+</body>
+</html>
