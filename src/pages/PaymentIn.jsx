@@ -17,10 +17,12 @@ const PaymentIn = () => {
     const [showDateMenu, setShowDateMenu] = useState(false);
     
     const [payments, setPayments] = useState([]);
-    // const [loading, setLoading] = useState(true); // Temporarily unused
+    
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const fetchPayments = async () => {
-        // setLoading(true);
         try {
             const response = await api.get('/payments');
             const data = response.data
@@ -37,14 +39,17 @@ const PaymentIn = () => {
             setPayments(data);
         } catch (error) {
             console.error('Error fetching payments:', error);
-        } finally {
-            // setLoading(false);
         }
     };
 
     React.useEffect(() => {
         fetchPayments();
     }, []);
+
+    // Reset pagination when filters change
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, dateRange]);
 
     const dateOptions = [
         'Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days', 'This Month', 'Last 365 Days', 'All Time'
@@ -93,6 +98,13 @@ const PaymentIn = () => {
             return matchesSearch && matchesDate;
         });
     }, [searchTerm, dateRange, payments]);
+
+    // Pagination Logic
+    const totalPages = Math.ceil(filteredPayments.length / itemsPerPage);
+    const paginatedPayments = filteredPayments.slice(
+        (currentPage - 1) * itemsPerPage, 
+        currentPage * itemsPerPage
+    );
 
 
     const handleDelete = async (id) => {
@@ -200,64 +212,72 @@ const PaymentIn = () => {
                 </div>
 
                 {/* Data Table / Card View */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-[24px] border border-gray-200/60 shadow-sm overflow-hidden backdrop-blur-xl">
                     {/* Desktop View */}
                     <div className="hidden md:block overflow-x-auto">
-                        <table className="w-full text-left">
+                        <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50/50 border-b border-gray-100">
-                                <tr className="text-[11px] font-black text-gray-400 uppercase tracking-[2px]">
-                                    <th className="px-6 py-4">Date <ChevronDown size={12} className="inline ml-1" /></th>
-                                    <th className="px-6 py-4">Payment Number</th>
-                                    <th className="px-6 py-4">Party Name</th>
-                                    <th className="px-6 py-4">Amount</th>
-                                    <th className="px-6 py-4">Actions</th>
+                                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">
+                                    <th className="px-8 py-5">Date</th>
+                                    <th className="px-6 py-5">Receipt No</th>
+                                    <th className="px-6 py-5">Party Details</th>
+                                    <th className="px-6 py-5 text-right">Amount</th>
+                                    <th className="px-8 py-5 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50/50">
-                                {filteredPayments.length === 0 ? (
+                            <tbody className="divide-y divide-gray-50">
+                                {paginatedPayments.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3 opacity-20">
-                                                <HandCoins size={48} />
-                                                <p className="text-sm font-black uppercase tracking-widest">No matching payments found</p>
+                                        <td colSpan="5" className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-4 opacity-30">
+                                                <div className="p-4 bg-gray-100 rounded-full">
+                                                    <HandCoins size={32} className="text-gray-500" />
+                                                </div>
+                                                <p className="text-xs font-black uppercase tracking-[3px] text-gray-400">No records found</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredPayments.map((p, idx) => (
-                                        <tr key={idx} className="hover:bg-gray-50/30 transition-colors group">
-                                            <td className="px-6 py-5 text-sm text-gray-600 font-bold">{p.date}</td>
-                                            <td className="px-6 py-5 text-sm text-gray-400 font-black">#{p.number}</td>
+                                    paginatedPayments.map((p, idx) => (
+                                        <tr key={idx} className="hover:bg-gray-50/40 transition-all group duration-200">
+                                            <td className="px-8 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-gray-700">{p.date}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-5">
-                                                <div className="text-sm font-black text-gray-800 uppercase tracking-tight max-w-[400px] truncate group-hover:text-indigo-600 transition-colors">
+                                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-lg">#{p.number}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-indigo-600 transition-colors cursor-pointer">
                                                     {p.party}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-1 text-sm font-black text-gray-900 tracking-tight">
-                                                    <span className="text-gray-400 font-bold">₹</span>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="text-sm font-black text-gray-900">
+                                                    <span className="text-gray-400 font-bold mr-1">₹</span>
                                                     {p.amount.toLocaleString()}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-all duration-200">
                                                     <button 
                                                         onClick={() => navigate(`/sales/payment-in/view/${p.id}`)} 
-                                                        className="p-2.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-xl transition-all" 
+                                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" 
                                                         title="View Details"
                                                     >
                                                         <Eye size={18} />
                                                     </button>
                                                     <button 
                                                         onClick={() => navigate(`/sales/payment-in/edit/${p.id}`)} 
-                                                        className="p-2.5 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all" 
+                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" 
                                                         title="Edit"
                                                     >
                                                         <Edit size={18} />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(p.id)} 
-                                                        className="p-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all" 
+                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" 
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={18} />
@@ -272,47 +292,34 @@ const PaymentIn = () => {
                     </div>
 
                     {/* Mobile View */}
-                    <div className="md:hidden divide-y divide-gray-100">
-                        {filteredPayments.length === 0 ? (
-                            <div className="py-20 text-center opacity-20 flex flex-col items-center gap-3">
-                                <HandCoins size={48} />
-                                <p className="text-xs font-black uppercase tracking-widest">No matching payments</p>
+                    <div className="md:hidden divide-y divide-gray-50">
+                        {paginatedPayments.length === 0 ? (
+                            <div className="py-20 text-center opacity-30 flex flex-col items-center gap-3">
+                                <HandCoins size={40} />
+                                <p className="text-[10px] font-black uppercase tracking-widest">No payments</p>
                             </div>
                         ) : (
-                            filteredPayments.map((p, idx) => (
-                                <div key={idx} className="p-5 space-y-4 hover:bg-gray-50 transition-colors">
+                            paginatedPayments.map((p, idx) => (
+                                <div key={idx} className="p-5 space-y-4 bg-white active:bg-gray-50 transition-colors">
                                     <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                                <HandCoins size={20} />
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-indigo-400 tracking-widest uppercase">#{p.number}</span>
-                                                <span className="text-xs font-bold text-gray-400">{p.date}</span>
-                                            </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[13px] font-black text-gray-900 uppercase tracking-tight">{p.party}</span>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">#{p.number} • {p.date}</span>
                                         </div>
                                         <div className="flex items-center gap-1">
-                                            <button 
-                                                onClick={() => navigate(`/sales/payment-in/view/${p.id}`)} 
-                                                className="p-2 text-purple-600 bg-purple-50 rounded-lg"
-                                            >
-                                                <Eye size={16} />
-                                            </button>
-                                            <button 
-                                                onClick={() => navigate(`/sales/payment-in/edit/${p.id}`)} 
-                                                className="p-2 text-blue-600 bg-blue-50 rounded-lg"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
+                                             <button onClick={() => navigate(`/sales/payment-in/edit/${p.id}`)} className="p-2 text-gray-300 hover:text-blue-600 active:bg-blue-50 rounded-lg"><Edit size={16} /></button>
+                                             <button onClick={() => handleDelete(p.id)} className="p-2 text-gray-300 hover:text-red-600 active:bg-red-50 rounded-lg"><Trash2 size={16} /></button>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-black text-gray-800 uppercase tracking-tight line-clamp-2 leading-tight">{p.party}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-4 border-t border-gray-50">
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Received Amount</div>
-                                        <div className="text-lg font-black text-[#4F46E5] tracking-tight">
-                                            <span className="text-[10px] font-bold opacity-50 mr-1">₹</span>
+                                    <div className="flex justify-between items-end">
+                                        <button 
+                                            onClick={() => navigate(`/sales/payment-in/view/${p.id}`)}
+                                            className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-3 py-1.5 rounded-full"
+                                        >
+                                            View Reference
+                                        </button>
+                                        <div className="text-xl font-black text-gray-900 tracking-tighter">
+                                            <span className="text-gray-300 text-sm font-bold mr-1">₹</span>
                                             {p.amount.toLocaleString()}
                                         </div>
                                     </div>
@@ -320,6 +327,32 @@ const PaymentIn = () => {
                             ))
                         )}
                     </div>
+
+                    {/* Pagination Footer */}
+                    {filteredPayments.length > 0 && (
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredPayments.length)} of {filteredPayments.length}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-600 uppercase tracking-widest hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-xs font-black text-gray-900 px-2">{currentPage}</span>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-gray-600 uppercase tracking-widest hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

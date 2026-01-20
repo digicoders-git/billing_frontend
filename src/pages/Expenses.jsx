@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
-    Plus, Search, ChevronDown, 
+    Plus, Search, ChevronDown, ChevronLeft, ChevronRight,
     MoreVertical, FileText, IndianRupee, 
     Calendar, Filter, Edit2, Trash2, Printer 
 } from 'lucide-react';
@@ -23,6 +23,8 @@ const Expenses = () => {
     
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
 
     const [categories, setCategories] = useState(['All Expenses Categories']);
 
@@ -142,6 +144,16 @@ const Expenses = () => {
             { label: 'This Month', value: `₹ ${thisMonthExpenses.toLocaleString()}`, color: 'border-blue-100 bg-blue-50/20', textColor: 'text-blue-600', icon: Calendar },
         ];
     }, [expenses]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, categoryFilter, dateRange]);
+
+    const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+    const paginatedExpenses = filteredExpenses.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <DashboardLayout>
@@ -264,74 +276,112 @@ const Expenses = () => {
 
 
                 {/* Table Section */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden min-h-[400px]">
-                    <div className="overflow-x-auto h-full">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
+                    <div className="overflow-x-auto flex-1">
                         <table className="w-full text-left">
                             <thead className="bg-gray-50/50 border-b border-gray-100">
-                                <tr className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                                    <th className="px-6 py-4">Date <ChevronDown size={12} className="inline ml-1" /></th>
-                                    <th className="px-6 py-4">Expense Number</th>
-                                    <th className="px-6 py-4">Party Name</th>
-                                    <th className="px-6 py-4">Paid Via</th>
-                                    <th className="px-6 py-4">Category</th>
-                                    <th className="px-6 py-4">Amount <ChevronDown size={12} className="inline ml-1" /></th>
-                                    <th className="px-6 py-4"></th>
+                                <tr className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                    <th className="px-8 py-5 text-left">Date</th>
+                                    <th className="px-6 py-5 text-left">Expense #</th>
+                                    <th className="px-6 py-5 text-left">Party Name</th>
+                                    <th className="px-6 py-5 text-left">Category</th>
+                                    <th className="px-6 py-5 text-left">Payment Mode</th>
+                                    <th className="px-6 py-5 text-right w-40">Amount</th>
+                                    <th className="px-8 py-5 text-right w-40">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-gray-50 select-none">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
-                                            Loading Expenses...
+                                        <td colSpan="7">
+                                            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                                                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Expenses...</p>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : filteredExpenses.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
-                                            No Expenses Found
-                                            <div className="mt-4 flex justify-center opacity-50">
-                                                <FileText size={48} className="text-gray-200" />
+                                        <td colSpan="7">
+                                            <div className="flex flex-col items-center justify-center py-32 text-center">
+                                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                                    <FileText size={24} className="text-gray-300" />
+                                                </div>
+                                                <h3 className="text-gray-900 font-bold">No Expenses Found</h3>
+                                                <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">
+                                                    No expenses match your search or filter criteria.
+                                                </p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredExpenses.map((item) => (
-                                        <tr key={item._id} className="hover:bg-gray-50/50 transition-colors group">
-                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">{new Date(item.date).toLocaleDateString()}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 font-medium">{item.expenseNumber}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-800 font-black uppercase tracking-tight">{item.partyName || '-'}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                <div className="font-bold text-gray-700">{item.paymentMode}</div>
-                                                {item.accountId && (
-                                                    <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-wide">
-                                                        {item.accountId.name || 'Unknown Account'}
+                                    paginatedExpenses.map((item) => (
+                                        <tr key={item._id} className="hover:bg-indigo-50/10 transition-colors group cursor-pointer border-b last:border-0">
+                                            <td className="px-8 py-5 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-black text-gray-800">
+                                                        {new Date(item.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                    <span className="text-[10px] font-bold text-gray-400">
+                                                        {new Date(item.date).getFullYear()}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="font-black text-gray-500 bg-gray-100 border border-gray-200 px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase">
+                                                    #{item.expenseNumber}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white border border-gray-100 rounded-xl flex items-center justify-center text-indigo-600 font-black uppercase text-sm shadow-sm">
+                                                        {(item.partyName || (item.category || 'NA'))[0]}
                                                     </div>
-                                                )}
+                                                    <span className="text-sm font-black text-gray-800 group-hover:text-indigo-600 transition-colors truncate max-w-[200px]">
+                                                        {item.partyName || '-'}
+                                                    </span>
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 font-medium bg-gray-50 inline-block rounded my-2 px-2 py-1">{item.category}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-bold text-gray-900">₹ {item.amount.toLocaleString()}</div>
+                                            <td className="px-6 py-5">
+                                                 <span className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-purple-100 bg-purple-50 text-purple-600">
+                                                    {item.category}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-gray-700 uppercase">{item.paymentMode}</span>
+                                                    {item.accountId && (
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mt-0.5 group-hover:text-indigo-500 transition-colors">
+                                                            {item.accountId.name}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <div className="text-sm font-black text-gray-900 tracking-tight">
+                                                    ₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
                                                     <button 
-                                                        onClick={() => navigate(`/expenses/print/${item._id}`)}
-                                                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Print Voucher"
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/expenses/print/${item._id}`); }}
+                                                        className="p-2 bg-white text-gray-400 hover:text-indigo-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
+                                                        title="Print"
                                                     >
                                                         <Printer size={16} />
                                                     </button>
                                                     <button 
-                                                        onClick={() => navigate(`/expenses/edit/${item._id}`)}
-                                                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                                        title="Edit Expense"
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/expenses/edit/${item._id}`); }}
+                                                        className="p-2 bg-white text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
+                                                        title="Edit"
                                                     >
                                                         <Edit2 size={16} />
                                                     </button>
                                                     <button 
-                                                        onClick={() => handleDelete(item._id)}
-                                                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Delete Expense"
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
+                                                        className="p-2 bg-white text-gray-400 hover:text-rose-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
+                                                        title="Delete"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -343,6 +393,52 @@ const Expenses = () => {
                             </tbody>
                         </table>
                     </div>
+                    {/* Pagination Controls */}
+                    {totalPages > 0 && (
+                        <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredExpenses.length)} of {filteredExpenses.length}
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
+                                >
+                                    <ChevronLeft size={16} className="text-gray-600" />
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter(page => Math.abs(page - currentPage) <= 1 || page === 1 || page === totalPages)
+                                        .map((page, index, array) => (
+                                            <React.Fragment key={page}>
+                                                {index > 0 && array[index - 1] !== page - 1 && (
+                                                    <span className="px-2 text-gray-400">...</span>
+                                                )}
+                                                <button
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                                                        currentPage === page
+                                                            ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+                                                            : "text-gray-500 hover:bg-white hover:text-indigo-600"
+                                                    )}
+                                                >
+                                                    {page}
+                                                </button>
+                                            </React.Fragment>
+                                        ))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 rounded-lg hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:shadow-none transition-all"
+                                >
+                                    <ChevronRight size={16} className="text-gray-600" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

@@ -4,7 +4,7 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { 
   Plus, Search, Eye, Edit, 
   Trash2, ChevronRight, Users, TrendingUp, TrendingDown, 
-  ArrowUpDown, FileText, Download, Filter, Phone, Tag, CreditCard
+  ArrowUpDown, FileText, Download, Filter, Phone, Tag, CreditCard, X
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Pagination from '../components/shared/Pagination';
@@ -24,6 +24,10 @@ const Parties = () => {
   const [partiesList, setPartiesList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
+  const [categoryLoading, setCategoryLoading] = useState(false);
 
   const fetchParties = async () => {
     setIsLoading(true);
@@ -44,6 +48,54 @@ const Parties = () => {
       setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    setCategoryLoading(true);
+    try {
+        const response = await api.post('/party-categories', { name: newCategoryName.trim() });
+        setCategories(prev => [...prev, response.data].sort((a, b) => a.name.localeCompare(b.name)));
+        setNewCategoryName('');
+        Swal.fire({
+            title: 'Added',
+            text: 'Category created successfully',
+            icon: 'success',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    } catch (error) {
+        Swal.fire('Error', error.response?.data?.message || 'Failed to create category', 'error');
+    } finally {
+        setCategoryLoading(false);
+    }
+  };
+
+  const handleUpdateCategory = async (id, name) => {
+    if (!name.trim()) return;
+    setCategoryLoading(true);
+    try {
+        const response = await api.put(`/party-categories/${id}`, { name: name.trim() });
+        setCategories(prev => prev.map(cat => cat._id === id ? response.data : cat));
+        setEditingCategoryId(null);
+        setNewCategoryName('');
+    } catch (error) {
+        Swal.fire('Error', error.response?.data?.message || 'Failed to update category', 'error');
+    } finally {
+        setCategoryLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+        await api.delete(`/party-categories/${id}`);
+        setCategories(prev => prev.filter(cat => cat._id !== id));
+    } catch (error) {
+        Swal.fire('Error', 'Failed to delete category', 'error');
     }
   };
 
@@ -125,9 +177,12 @@ const Parties = () => {
 
   const filteredParties = partiesList.filter(party => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = party.name.toLowerCase().includes(term) || 
-                          party.mobile.includes(term);
-    const matchesCategory = selectedCategory ? party.category.toLowerCase() === selectedCategory.toLowerCase() : true;
+    const matchesSearch = (party.name || '').toLowerCase().includes(term) || 
+                          (party.mobile || '').includes(term);
+    
+    const partyCat = (party.category || '').toLowerCase();
+    const selectedCat = selectedCategory.toLowerCase();
+    const matchesCategory = selectedCategory ? partyCat === selectedCat : true;
     
     let matchesType = true;
     const balanceType = (party.balanceType || '').toLowerCase();
@@ -245,27 +300,35 @@ const Parties = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
           </div>
-          <div className="flex gap-2">
-              <div className="relative">
-                  <select 
-                    className="appearance-none pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-bold text-xs uppercase tracking-widest text-gray-600"
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+              <div className="flex gap-2">
+                  <div className="relative flex items-center">
+                      <select 
+                        className="appearance-none pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-bold text-xs uppercase tracking-widest text-gray-600"
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                      >
+                          <option value="">All Categories</option>
+                          {categories.map(cat => (
+                            <option key={cat._id} value={cat.name}>{cat.name}</option>
+                          ))}
+                      </select>
+                      <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                  </div>
+                  <button 
+                    onClick={() => setShowCategoryModal(true)}
+                    className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
+                    title="Manage Categories"
                   >
-                      <option value="">All Categories</option>
-                      {categories.map(cat => (
-                        <option key={cat._id} value={cat.name}>{cat.name}</option>
-                      ))}
-                  </select>
-                  <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-gray-400 pointer-events-none" />
+                      <Tag size={20} />
+                  </button>
+                  <button 
+                    onClick={handleDownload}
+                    className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
+                    title="Export to Excel"
+                  >
+                      <Download size={20} />
+                  </button>
               </div>
-              <button 
-                onClick={handleDownload}
-                className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
-              >
-                  <Download size={20} />
-              </button>
-          </div>
       </div>
 
       {/* Desktop View Table */}
@@ -381,6 +444,87 @@ const Parties = () => {
             />
           </div>
       </div>
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-scale-up">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 tracking-tight">
+                <Tag size={20} className="text-indigo-600" />
+                Manage Categories
+              </h3>
+              <button 
+                onClick={() => {
+                    setShowCategoryModal(false);
+                    setEditingCategoryId(null);
+                    setNewCategoryName('');
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (editingCategoryId) handleUpdateCategory(editingCategoryId, newCategoryName);
+                        else handleCreateCategory(e);
+                    }} 
+                    className="mb-6"
+                >
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            required
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black/10 outline-none text-sm font-medium"
+                            placeholder="Enter category name..."
+                        />
+                        <button 
+                            type="submit"
+                            disabled={categoryLoading}
+                            className={`px-4 py-2 rounded-xl font-bold text-xs uppercase tracking-widest transition-all ${editingCategoryId ? 'bg-green-600 hover:bg-green-700' : 'bg-black hover:bg-gray-800'} text-white shadow-sm`}
+                        >
+                            {categoryLoading ? '...' : editingCategoryId ? 'Update' : 'Add'}
+                        </button>
+                    </div>
+                </form>
+
+                <div className="max-h-[300px] overflow-auto space-y-2">
+                    {categories.length === 0 ? (
+                        <p className="text-center text-gray-400 py-8 text-sm italic">No categories added yet.</p>
+                    ) : (
+                        categories.map(cat => (
+                            <div key={cat._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl group hover:bg-gray-100 transition-all border border-transparent hover:border-gray-200">
+                                <span className="text-sm font-bold text-gray-700">{cat.name}</span>
+                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => {
+                                            setEditingCategoryId(cat._id);
+                                            setNewCategoryName(cat.name);
+                                        }}
+                                        className="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"
+                                    >
+                                        <Edit size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeleteCategory(cat._id)}
+                                        className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

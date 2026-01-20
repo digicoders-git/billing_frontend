@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api from '../lib/axios';
+import { cn } from '../lib/utils';
 
 const Branches = () => {
     const [branches, setBranches] = useState([]);
@@ -125,305 +126,239 @@ const Branches = () => {
 
     return (
         <DashboardLayout>
-            <div className="p-4 sm:p-6 space-y-6 bg-gray-50 min-h-screen">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Branch Management</h1>
-                        <p className="text-sm text-gray-500 font-semibold mt-1">Manage your branches and their access permissions</p>
+            <div className="p-4 sm:p-8 space-y-8 bg-gray-50/30 min-h-screen">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase italic decoration-indigo-500/20 underline decoration-4 underline-offset-8">Branches</h1>
+                            <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest">Network</span>
+                        </div>
+                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] mt-4">Manage Enterprise Locations & Access</p>
                     </div>
-                    <button
+                    <button 
                         onClick={() => navigate('/branches/create')}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#000000] text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-indigo-700 transition-all"
+                        className="w-full md:w-auto px-8 py-4 bg-gray-900 text-white rounded-[22px] text-[11px] font-black shadow-2xl shadow-gray-200 hover:bg-indigo-600 hover:-translate-y-1 transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 active:scale-95"
                     >
-                        <Plus size={18} />
-                        Add New Branch
+                        <Plus size={18} /> Add New Branch
                     </button>
                 </div>
 
                 {/* Statistics Cards */}
                 {statistics && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-3 bg-indigo-50 rounded-lg">
-                                    <Building2 size={24} className="text-indigo-600" />
-                                </div>
-                                <BarChart3 size={20} className="text-gray-300" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-indigo-50 text-indigo-500 rounded-2xl group-hover:scale-110 transition-transform"><Building2 size={20} /></div>
+                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Total</span>
                             </div>
-                            <div className="text-2xl font-black text-gray-900">{statistics.totalBranches}</div>
-                            <div className="text-xs font-semibold text-gray-500 mt-1">Total Branches</div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">All Branches</span>
+                                <span className="text-2xl font-black text-indigo-600 italic mt-1">{statistics.totalBranches}</span>
+                            </div>
                         </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-3 bg-green-50 rounded-lg">
-                                    <CheckCircle2 size={24} className="text-green-600" />
-                                </div>
-                                <Power size={20} className="text-gray-300" />
+                        <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform"><CheckCircle2 size={20} /></div>
+                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Active</span>
                             </div>
-                            <div className="text-2xl font-black text-gray-900">{statistics.activeBranches}</div>
-                            <div className="text-xs font-semibold text-gray-500 mt-1">Active Branches</div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Operational</span>
+                                <span className="text-2xl font-black text-emerald-600 italic mt-1">{statistics.activeBranches}</span>
+                            </div>
                         </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-3 bg-blue-50 rounded-lg">
-                                    <TrendingUp size={24} className="text-blue-600" />
-                                </div>
-                                <FileText size={20} className="text-gray-300" />
+                        <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-blue-50 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform"><TrendingUp size={20} /></div>
+                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Revenue</span>
                             </div>
-                            <div className="text-2xl font-black text-gray-900">
-                                ₹ {(statistics.aggregateStats.totalSales || 0).toLocaleString()}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Total Sales</span>
+                                <span className="text-2xl font-black text-blue-600 italic mt-1">₹ {(statistics.aggregateStats.totalSales || 0).toLocaleString()}</span>
                             </div>
-                            <div className="text-xs font-semibold text-gray-500 mt-1">Total Sales</div>
                         </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-3 bg-purple-50 rounded-lg">
-                                    <Users size={24} className="text-purple-600" />
-                                </div>
-                                <User size={20} className="text-gray-300" />
+                        <div className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-purple-50 text-purple-500 rounded-2xl group-hover:scale-110 transition-transform"><Users size={20} /></div>
+                                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none">Reach</span>
                             </div>
-                            <div className="text-2xl font-black text-gray-900">
-                                {statistics.aggregateStats.totalCustomers || 0}
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Total Customers</span>
+                                <span className="text-2xl font-black text-purple-600 italic mt-1">{statistics.aggregateStats.totalCustomers || 0}</span>
                             </div>
-                            <div className="text-xs font-semibold text-gray-500 mt-1">Total Customers</div>
                         </div>
                     </div>
                 )}
 
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 w-fit">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => setFilter('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        className={cn(
+                            "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
                             filter === 'all' 
-                                ? 'bg-indigo-600 text-white shadow-md' 
-                                : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                                ? "bg-gray-900 text-white border-gray-900 shadow-lg" 
+                                : "bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-600"
+                        )}
                     >
-                        All ({branches.length})
+                        All
                     </button>
                     <button
                         onClick={() => setFilter('active')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        className={cn(
+                            "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
                             filter === 'active' 
-                                ? 'bg-green-600 text-white shadow-md' 
-                                : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                                ? "bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200" 
+                                : "bg-white text-gray-400 border-gray-200 hover:border-emerald-200 hover:text-emerald-600"
+                        )}
                     >
-                        Active ({branches.filter(b => b.isActive).length})
+                        Active
                     </button>
                     <button
                         onClick={() => setFilter('inactive')}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                        className={cn(
+                            "px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border",
                             filter === 'inactive' 
-                                ? 'bg-gray-600 text-white shadow-md' 
-                                : 'text-gray-600 hover:bg-gray-50'
-                        }`}
+                                ? "bg-gray-400 text-white border-gray-400 shadow-lg" 
+                                : "bg-white text-gray-400 border-gray-200 hover:border-gray-300 hover:text-gray-500"
+                        )}
                     >
-                        Inactive ({branches.filter(b => !b.isActive).length})
+                        Inactive
                     </button>
                 </div>
 
-                {/* Grid Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredBranches.length === 0 ? (
-                        <div className="col-span-full py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-200">
-                            <Building2 size={64} className="mx-auto text-gray-300 mb-4" />
-                            <p className="text-lg font-bold text-gray-400">No branches found</p>
-                            <p className="text-sm text-gray-400 mt-2">Create your first branch to get started</p>
-                        </div>
-                    ) : (
-                        filteredBranches.map((branch) => (
-                            <div 
-                                key={branch._id} 
-                                className={`bg-white p-6 rounded-2xl shadow-sm border-2 transition-all group relative overflow-hidden ${
-                                    branch.isActive 
-                                        ? 'border-gray-200 hover:border-indigo-200 hover:shadow-xl' 
-                                        : 'border-gray-100 bg-gray-50/50 opacity-75'
-                                }`}
-                            >
-                                {/* Status Badge */}
-                                <div className="absolute top-4 right-4 z-10">
-                                    {branch.isActive ? (
-                                        <div className="flex items-center gap-1 bg-green-50 text-green-600 px-3 py-1 rounded-full text-xs font-bold">
-                                            <CheckCircle2 size={12} />
-                                            Active
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-1 bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">
-                                            <XCircle size={12} />
-                                            Inactive
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Branch Icon & Name */}
-                                <div className="flex items-start gap-4 mb-6">
-                                    <div className="p-4 bg-indigo-50 text-indigo-600 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
-                                        <Building2 size={28} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="text-lg font-black text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
-                                            {branch.name}
-                                        </h3>
-                                        <div className="text-xs font-bold text-gray-400 mt-1">
-                                            CODE: {branch.code}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Details */}
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                                            <User size={16} />
-                                        </div>
-                                        <div className="flex flex-col flex-1">
-                                            <span className="text-xs font-semibold text-gray-400">Manager</span>
-                                            <span className="text-gray-700 font-semibold truncate">{branch.contact?.manager || 'Not assigned'}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                                            <Key size={16} />
-                                        </div>
-                                        <div className="flex flex-col flex-1">
-                                            <span className="text-xs font-semibold text-gray-400">Username</span>
-                                            <span className="text-gray-700 font-semibold truncate">{branch.username}</span>
-                                        </div>
-                                    </div>
-
-                                    {branch.contact?.phone && (
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                                                <Phone size={16} />
+                {/* Table Section */}
+                <div className="bg-white rounded-[32px] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden flex flex-col min-h-[500px]">
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 z-10">
+                                <tr className="border-b border-gray-50">
+                                    <th className="px-8 py-6 text-left">Branch Details</th>
+                                    <th className="px-6 py-6 text-left">Manager Info</th>
+                                    <th className="px-6 py-6 text-left">Location</th>
+                                    <th className="px-6 py-6 text-center">Status</th>
+                                    <th className="px-6 py-6 text-right">Performance</th>
+                                    <th className="px-8 py-6 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50/50 select-none">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="6">
+                                            <div className="flex flex-col items-center justify-center py-32 gap-4">
+                                                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Network...</p>
                                             </div>
-                                            <div className="flex flex-col flex-1">
-                                                <span className="text-xs font-semibold text-gray-400">Phone</span>
-                                                <span className="text-gray-700 font-semibold">{branch.contact.phone}</span>
+                                        </td>
+                                    </tr>
+                                ) : filteredBranches.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="6">
+                                            <div className="flex flex-col items-center justify-center py-32 text-center opacity-50">
+                                                <Building2 size={64} className="text-gray-300 mb-4" />
+                                                <h3 className="text-lg font-black text-gray-400 uppercase tracking-widest">No Branches Found</h3>
+                                                <p className="text-xs font-bold text-gray-300 mt-2 uppercase tracking-wide">Expand your network by adding a new branch</p>
                                             </div>
-                                        </div>
-                                    )}
-
-                                    {branch.address?.city && (
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400">
-                                                <MapPin size={16} />
-                                            </div>
-                                            <div className="flex flex-col flex-1">
-                                                <span className="text-xs font-semibold text-gray-400">Location</span>
-                                                <span className="text-gray-700 font-semibold truncate">
-                                                    {branch.address.city}, {branch.address.state}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Permissions */}
-                                <div className="pt-4 border-t border-gray-100">
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <Shield size={14} className="text-gray-400" />
-                                        <span className="text-xs font-bold text-gray-500">PERMISSIONS ({branch.permissions.length} modules)</span>
-                                    </div>
-                                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                                        {branch.permissions.slice(0, 3).map(perm => (
-                                            <div key={perm.module} className="bg-gray-50 p-2 rounded-lg">
-                                                <div className="text-xs font-bold text-gray-900 mb-1">{perm.module}</div>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {perm.actions.view && (
-                                                        <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                                                            👁️ View
-                                                        </span>
-                                                    )}
-                                                    {perm.actions.create && (
-                                                        <span className="text-[10px] font-semibold bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                                                            ➕ Create
-                                                        </span>
-                                                    )}
-                                                    {perm.actions.edit && (
-                                                        <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">
-                                                            ✏️ Edit
-                                                        </span>
-                                                    )}
-                                                    {perm.actions.delete && (
-                                                        <span className="text-[10px] font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded">
-                                                            🗑️ Delete
-                                                        </span>
-                                                    )}
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredBranches.map((branch) => (
+                                        <tr key={branch._id} className="hover:bg-[#F9FAFF] transition-all group cursor-pointer border-b last:border-0">
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-[14px] flex items-center justify-center text-indigo-600 font-black uppercase text-sm shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                                        {branch.name[0]}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-black text-gray-800 group-hover:text-indigo-600 transition-colors uppercase tracking-tight">{branch.name}</span>
+                                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Code: {branch.code}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
-                                        {branch.permissions.length > 3 && (
-                                            <div className="text-xs text-gray-500 font-semibold text-center py-1">
-                                                +{branch.permissions.length - 3} more modules
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Stats */}
-                                {branch.stats && (
-                                    <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-100">
-                                        <div className="text-center">
-                                            <div className="text-lg font-black text-gray-900">
-                                                ₹ {(branch.stats.totalSales || 0).toLocaleString()}
-                                            </div>
-                                            <div className="text-xs text-gray-500 font-semibold">Sales</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-lg font-black text-gray-900">
-                                                {branch.stats.totalInvoices || 0}
-                                            </div>
-                                            <div className="text-xs text-gray-500 font-semibold">Invoices</div>
-                                        </div>
-                                    </div>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-gray-700 uppercase tracking-tight">{branch.contact?.manager || 'Unassigned'}</span>
+                                                    <span className="text-[9px] font-bold text-gray-400 mt-1 flex items-center gap-1 group-hover:text-indigo-500 transition-colors">
+                                                        <Phone size={10} />
+                                                        {branch.contact?.phone || 'No Contact'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-6">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-gray-50 rounded-lg text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                                        <MapPin size={12} />
+                                                    </div>
+                                                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+                                                        {branch.address?.city || 'Unknown'}, {branch.address?.state || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-6 text-center">
+                                                <span className={cn(
+                                                    "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-[2px] border shadow-sm inline-block min-w-[90px]",
+                                                    branch.isActive
+                                                        ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                        : "bg-gray-50 text-gray-500 border-gray-100"
+                                                )}>
+                                                    {branch.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-6 text-right">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-sm font-black text-gray-900 tracking-tight">₹ {(branch.stats?.totalSales || 0).toLocaleString()}</span>
+                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Sales Revenue</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/branches/view/${branch._id}`); }}
+                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                        title="View Details"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/branches/edit/${branch._id}`); }}
+                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                        title="Edit Configuration"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleToggleStatus(branch._id, branch.isActive, branch.name); }}
+                                                        className={cn(
+                                                            "p-2.5 bg-white border border-gray-100 rounded-[12px] shadow-sm transition-all active:scale-90",
+                                                            branch.isActive ? "text-amber-500 hover:text-amber-600 hover:border-amber-100" : "text-emerald-500 hover:text-emerald-600 hover:border-emerald-100"
+                                                        )}
+                                                        title={branch.isActive ? "Deactivate Branch" : "Activate Branch"}
+                                                    >
+                                                        <Power size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(branch._id, branch.name); }}
+                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-rose-600 hover:border-rose-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                        title="Delete Branch"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
                                 )}
-
-                                {/* Action Buttons */}
-                                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-6 pt-4 border-t border-gray-100">
-                                    <button
-                                        onClick={() => navigate(`/branches/view/${branch._id}`)}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-blue-50 border-2 border-blue-200 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-all text-sm shadow-sm min-w-[100px]"
-                                    >
-                                        <Eye size={18} />
-                                        <span>View</span>
-                                    </button>
-                                    <button
-                                        onClick={() => navigate(`/branches/edit/${branch._id}`)}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:border-gray-300 hover:bg-gray-50 transition-all text-sm shadow-sm min-w-[100px]"
-                                    >
-                                        <Edit2 size={18} />
-                                        <span>Edit</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleToggleStatus(branch._id, branch.isActive, branch.name)}
-                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold transition-all text-sm shadow-sm min-w-[120px] ${
-                                            branch.isActive
-                                                ? 'bg-amber-50 border-2 border-amber-200 text-amber-700 hover:bg-amber-100'
-                                                : 'bg-green-50 border-2 border-green-200 text-green-700 hover:bg-green-100'
-                                        }`}
-                                    >
-                                        {branch.isActive ? <PowerOff size={18} /> : <Power size={18} />}
-                                        <span>{branch.isActive ? 'Deactivate' : 'Activate'}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(branch._id, branch.name)}
-                                        className="flex items-center justify-center p-2.5 bg-red-50 border-2 border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-100 transition-all shadow-sm"
-                                        title="Delete Branch"
-                                        aria-label="Delete Branch"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                            </tbody>
+                        </table>
+                    </div>
+                    {/* Footer Status Bar for Branches */}
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                         <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Online</span>
+                         </div>
+                         <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">Network Configuration</span>
+                    </div>
                 </div>
             </div>
         </DashboardLayout>

@@ -164,98 +164,52 @@ const AddPaymentIn = () => {
                             <div className="space-y-8">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Customer / Party Account</label>
-                                    <div className="relative">
-                                        <div 
-                                            className="w-full h-16 flex justify-between items-center px-6 bg-gray-50 border border-transparent rounded-[22px] cursor-pointer hover:bg-white hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-50/50 transition-all"
-                                            onClick={() => setShowPartyDropdown(!showPartyDropdown)}
-                                        >
-                                            <div className="flex items-center gap-4 overflow-hidden">
-                                                <div className="p-2 bg-white rounded-xl text-indigo-500 shadow-sm"><User size={20} /></div>
-                                                <span className={cn("text-sm font-black uppercase tracking-tight truncate", formData.party ? "text-gray-900" : "text-gray-300")}>
+                                    <div 
+                                        className="w-full h-16 flex items-center justify-between px-6 bg-white border border-gray-200 rounded-2xl cursor-pointer hover:border-black/20 hover:shadow-lg transition-all group"
+                                        onClick={() => setShowPartyDropdown(true)}
+                                    >
+                                        <div className="flex items-center gap-4 overflow-hidden">
+                                            <div className={`p-2.5 rounded-xl transition-colors ${formData.party ? 'bg-black text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-gray-200'}`}>
+                                                <User size={20} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className={cn("text-sm font-black uppercase tracking-tight truncate transition-colors", formData.party ? "text-gray-900" : "text-gray-400 group-hover:text-gray-600")}>
                                                     {formData.party?.name || "Select Payer Account"}
                                                 </span>
+                                                {formData.party && <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{formData.party.billingAddress || 'Quick Entry'}</span>}
                                             </div>
-                                            <ChevronDown size={20} className={cn("text-gray-300 transition-transform duration-300", showPartyDropdown && "rotate-180")} />
                                         </div>
-
-                                        {showPartyDropdown && (
-                                            <>
-                                                <div className="fixed inset-0 z-50 lg:hidden bg-black/20 backdrop-blur-sm" onClick={() => setShowPartyDropdown(false)} />
-                                                <div className="absolute top-full left-0 w-full mt-3 bg-white border border-gray-100 rounded-[32px] shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                    <div className="p-5 border-b border-gray-50 bg-gray-50/50">
-                                                        <div className="relative group/search">
-                                                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-indigo-500 transition-colors" />
-                                                            <input 
-                                                                type="text" 
-                                                                className="w-full pl-11 pr-4 py-3.5 bg-white border-none rounded-2xl text-[11px] font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-50 outline-none transition-all"
-                                                                placeholder="TYPE TO SEARCH CUSTOMER..."
-                                                                autoFocus
-                                                                value={partySearch}
-                                                                onChange={(e) => setPartySearch(e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="max-h-72 overflow-y-auto py-2 custom-scrollbar">
-                                                        {parties.filter(p => !partySearch || p.name.toLowerCase().includes(partySearch.toLowerCase())).map(party => (
-                                                            <div 
-                                                                key={party._id}
-                                                                className="px-7 py-4 hover:bg-indigo-50/50 cursor-pointer border-b border-gray-50 last:border-0 transition-all flex items-center justify-between group/item"
-                                                                onClick={() => {
-                                                                    setFormData({...formData, party: party, partyName: party.name});
-                                                                    setShowPartyDropdown(false);
-                                                                    setPartySearch('');
-                                                                }}
-                                                            >
-                                                                <div className="flex flex-col">
-                                                                    <div className="font-black text-[13px] text-gray-800 uppercase tracking-tight group-hover/item:text-indigo-600 transition-colors italic">{party.name}</div>
-                                                                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{party.billingAddress || 'No Location'}</div>
-                                                                </div>
-                                                                <div className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-1 rounded">DUE: ₹ {party.openingBalance || 0}</div>
-                                                            </div>
-                                                        ))}
-                                                        {parties.length === 0 && (
-                                                             <div className="px-7 py-4 text-center text-gray-400 text-xs font-bold uppercase tracking-widest">No Parties Found</div>
-                                                        )}
-                                                    </div>
-                                                    <button 
-                                                        onClick={() => navigate('/add-party')}
-                                                        className="w-full py-5 text-indigo-600 font-black text-[11px] uppercase tracking-[4px] bg-gray-50/50 hover:bg-indigo-50 hover:underline transition-all"
-                                                    >
-                                                        + Create New Party
-                                                    </button>
-                                                </div>
-                                            </>
-                                        )}
+                                        <ChevronDown size={20} className="text-gray-300 group-hover:text-black transition-colors" />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Entry Date</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block px-1">Received On</label>
                                         <div className="relative group/date">
-                                            <Calendar size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/date:text-indigo-500 transition-colors" />
+                                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within/date:text-black transition-colors"><Calendar size={18} /></div>
                                             <input 
                                                 type="date" 
-                                                className="w-full h-16 pl-14 pr-4 bg-gray-50 border border-transparent rounded-[22px] text-[13px] font-black text-gray-700 hover:bg-white hover:shadow-md focus:bg-white focus:border-indigo-100 outline-none transition-all uppercase cursor-pointer italic"
+                                                className="w-full h-16 pl-14 pr-4 bg-white border border-gray-200 rounded-2xl text-[13px] font-black text-gray-900 focus:border-black focus:ring-1 focus:ring-black/5 outline-none transition-all uppercase cursor-pointer"
                                                 value={formData.date}
                                                 onChange={(e) => setFormData({...formData, date: e.target.value})}
                                             />
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Payment Method</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] block px-1">Mode</label>
                                         <div className="relative group/mode">
                                             <select 
-                                                className="w-full h-16 pl-6 pr-12 bg-gray-50 border border-transparent rounded-[22px] text-[11px] font-black text-gray-700 appearance-none hover:bg-white hover:shadow-md focus:bg-white focus:border-indigo-100 outline-none transition-all uppercase tracking-[2px] cursor-pointer"
+                                                className="w-full h-16 pl-6 pr-12 bg-white border border-gray-200 rounded-2xl text-[11px] font-black text-gray-900 appearance-none focus:border-black focus:ring-1 focus:ring-black/5 outline-none transition-all uppercase tracking-wider cursor-pointer"
                                                 value={formData.mode}
                                                 onChange={(e) => setFormData({...formData, mode: e.target.value})}
                                             >
-                                                <option value="Cash">Cash Receipt</option>
-                                                <option value="Online">Online / UPI / QR</option>
+                                                <option value="Cash">Cash Payment</option>
+                                                <option value="Online">Online / UPI</option>
                                                 <option value="Cheque">Bank Cheque</option>
-                                                <option value="NEFT">NEFT / RTGS</option>
+                                                <option value="NEFT">Bank Transfer (NEFT)</option>
                                             </select>
-                                            <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none transition-colors group-focus-within/mode:text-indigo-500" />
+                                            <ChevronDown size={18} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none group-focus-within/mode:text-black" />
                                         </div>
                                     </div>
                                 </div>
@@ -266,17 +220,17 @@ const AddPaymentIn = () => {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] block text-center sm:text-left px-1">Receipt Amount (₹)</label>
                                     <div className="relative group/amount">
-                                        <div className="absolute left-7 top-1/2 -translate-y-1/2 font-black text-2xl text-green-500 italic opacity-40 group-focus-within/amount:opacity-100 transition-opacity">₹</div>
+                                        <div className="absolute left-7 top-1/2 -translate-y-1/2 font-black text-2xl text-gray-900 italic opacity-40 group-focus-within/amount:opacity-100 transition-opacity">₹</div>
                                         <input 
                                             type="number" 
                                             placeholder="0.00"
-                                            className="w-full h-28 pl-14 pr-8 bg-green-50/30 border border-transparent rounded-[32px] text-5xl font-black text-gray-900 focus:bg-white focus:border-green-100 focus:shadow-2xl focus:shadow-green-500/10 transition-all outline-none italic"
+                                            className="w-full h-28 pl-14 pr-8 bg-white border border-gray-100 rounded-[32px] text-5xl font-black text-gray-900 focus:border-black focus:shadow-2xl focus:shadow-black/5 transition-all outline-none italic placeholder:text-gray-200"
                                             value={formData.amount}
                                             onChange={(e) => setFormData({...formData, amount: e.target.value})}
                                         />
                                         <div className="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col items-end opacity-0 group-hover/amount:opacity-100 transition-opacity duration-500">
-                                            <span className="text-[9px] font-black text-green-400 uppercase tracking-widest">Receiving</span>
-                                            <span className="text-[11px] font-black text-green-500 uppercase tracking-tight">CASH IN</span>
+                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Receiving</span>
+                                            <span className="text-[11px] font-black text-black uppercase tracking-tight">CASH IN</span>
                                         </div>
                                     </div>
                                 </div>
@@ -284,7 +238,7 @@ const AddPaymentIn = () => {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] block px-1">Narration / Internal Notes</label>
                                     <textarea 
-                                        className="w-full h-24 px-7 py-5 bg-gray-50 border border-transparent rounded-[24px] text-[12px] font-bold text-gray-600 focus:bg-white focus:border-indigo-100 hover:bg-white hover:shadow-md outline-none transition-all resize-none italic"
+                                        className="w-full h-24 px-7 py-5 bg-white border border-gray-100 rounded-[24px] text-[12px] font-bold text-gray-900 focus:border-black hover:shadow-md outline-none transition-all resize-none italic placeholder:text-gray-300"
                                         placeholder="Add private reference or transaction details..."
                                         value={formData.notes}
                                         onChange={(e) => setFormData({...formData, notes: e.target.value})}
@@ -320,6 +274,86 @@ const AddPaymentIn = () => {
                      </div>
                 </div>
             </div>
+        {/* Party Selection Checkbox Modal */}
+        {showPartyDropdown && (
+            <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+                <div 
+                    className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                     {/* Modal Header */}
+                     <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                        <div>
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Select Payer</h3>
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Select account to receive payment from</p>
+                        </div>
+                        <div 
+                            onClick={() => setShowPartyDropdown(false)}
+                            className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95"
+                        >
+                            <X size={20} />
+                        </div>
+                     </div>
+
+                     {/* Search Bar */}
+                     <div className="p-6 pb-2">
+                        <div className="relative group/search">
+                            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-black transition-colors" size={20} />
+                            <input 
+                                type="text"
+                                placeholder="Search customer by name..."
+                                className="w-full pl-14 pr-5 py-4 bg-gray-50 font-bold border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-black transition-all placeholder:text-gray-400 text-sm"
+                                autoFocus
+                                value={partySearch}
+                                onChange={(e) => setPartySearch(e.target.value)}
+                            />
+                        </div>
+                     </div>
+
+                     {/* List */}
+                     <div className="max-h-[400px] overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
+                        {parties.filter(p => !partySearch || p.name.toLowerCase().includes(partySearch.toLowerCase())).map((party) => (
+                            <div 
+                                key={party._id}
+                                onClick={() => {
+                                    setFormData({...formData, party: party, partyName: party.name});
+                                    setShowPartyDropdown(false);
+                                    setPartySearch('');
+                                }}
+                                className="group p-4 rounded-2xl hover:bg-black/5 border border-transparent hover:border-black/5 cursor-pointer transition-all flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center font-black text-lg group-hover:bg-white group-hover:text-black group-hover:shadow-sm transition-all">
+                                        {party.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-sm text-gray-900 uppercase tracking-tight group-hover:underline decoration-2 underline-offset-2">{party.name}</h4>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{party.billingAddress || 'No Address'}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Current Due</div>
+                                    <div className="text-sm font-black text-red-500">₹ {(party.openingBalance || 0).toLocaleString()}</div>
+                                </div>
+                            </div>
+                        ))}
+                        {parties.length === 0 && (
+                            <div className="py-8 text-center">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No customers found</p>
+                            </div>
+                        )}
+                        
+                        <div 
+                            onClick={() => navigate('/add-party')}
+                            className="mt-2 p-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:bg-black/5 transition-all group"
+                        >
+                            <User size={18} className="text-gray-400 group-hover:text-black transition-colors" />
+                            <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-black transition-colors">Create New Customer</span>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        )}
         </DashboardLayout>
     );
 };

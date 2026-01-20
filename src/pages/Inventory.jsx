@@ -613,71 +613,84 @@ const Inventory = () => {
 
       {/* Desktop View Table */}
       <div className="hidden lg:block bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden mb-8">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-separate border-spacing-0">
               <thead>
                   <tr className="bg-gray-50/50">
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Item / Code</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Category</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">HSN</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Godown</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Stock</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Sale Price</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Item Details</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Category & Location</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic">Availability</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 italic text-right">Pricing</th>
                       <th className="px-6 py-4 text-right border-b border-gray-50 w-24"></th>
                   </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                   {currentItems.map((item) => (
-                      <tr key={item._id} className="group hover:bg-indigo-50/20 transition-all">
+                      <tr key={item._id} className="group hover:bg-gray-50/80 transition-all duration-200">
                           <td className="px-6 py-4">
-                              <p className="font-bold text-gray-900 text-sm whitespace-nowrap">{item.name}</p>
-                              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest tracking-tighter">Code: {item.code || '-'}</span>
+                              <div className="flex flex-col">
+                                  <span className="font-bold text-gray-900 text-sm">{item.name}</span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Code: {item.code || '-'}</span>
+                                      {item.hsn && <span className="text-[10px] text-indigo-400 font-bold">HSN: {item.hsn}</span>}
+                                  </div>
+                              </div>
                           </td>
                           <td className="px-6 py-4">
-                              <span className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider border border-indigo-100">
-                                  {item.category || 'Uncategorized'}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wide bg-indigo-50/50 w-fit px-2 py-0.5 rounded-md border border-indigo-100/50">
+                                      {item.category || 'Uncategorized'}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                                      <Database size={10} />
+                                      {(() => {
+                                          if (!item.godown) return 'Primary';
+                                          const matchedGodown = godowns.find(g => (g._id || g.id) === item.godown);
+                                          if (matchedGodown) return matchedGodown.name;
+                                          const godownStr = String(item.godown);
+                                          const nameMatch = godownStr.match(/^(.+?)\s*\(/);
+                                          return nameMatch ? nameMatch[1] : godownStr;
+                                      })()}
+                                  </span>
+                              </div>
                           </td>
                           <td className="px-6 py-4">
-                              <span className="text-[11px] font-bold text-gray-600 font-mono italic">{item.hsn || '-'}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
-                                  {(() => {
-                                      if (!item.godown) return 'Primary';
-                                      // Try to match by ID first
-                                      const matchedGodown = godowns.find(g => (g._id || g.id) === item.godown);
-                                      if (matchedGodown) return matchedGodown.name;
-                                      // If no ID match, check if it's stored as name or "Name (Type)"
-                                      const godownStr = String(item.godown);
-                                      // Extract name from "Name (Type)" format
-                                      const nameMatch = godownStr.match(/^(.+?)\s*\(/);
-                                      return nameMatch ? nameMatch[1] : godownStr;
-                                  })()}
-                               </span>
-                          </td>
-                          <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
-                                  {item.stock} {item.unit}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                  <div className={cn(
+                                      "flex items-center gap-1.5 w-fit px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider border",
+                                      getStockStyle(item.stock, item.minStock)
+                                  )}>
+                                      <Box size={12} />
+                                      {item.stock} {item.unit}
+                                  </div>
+                                  {item.stock <= (item.minStock || 5) && (
+                                      <span className="text-[9px] text-orange-500 font-bold flex items-center gap-1 px-1">
+                                          <AlertCircle size={10} />
+                                          Refill Needed
+                                      </span>
+                                  )}
+                              </div>
                           </td>
                           <td className="px-6 py-4 text-right">
                               <div className="flex flex-col items-end">
-                                  <p className="font-black text-sm text-gray-900 tabular-nums italic">₹{item.sellingPrice?.toLocaleString()}</p>
-                                  <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Buy: ₹{item.purchasePrice?.toLocaleString()}</p>
+                                  <p className="font-black text-base text-gray-900 tabular-nums italic">₹{item.sellingPrice?.toLocaleString()}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter line-through opacity-60">MRP ₹{item.mrp?.toLocaleString()}</span>
+                                      <span className="text-[10px] text-green-600 font-bold">Buy ₹{item.purchasePrice?.toLocaleString()}</span>
+                                  </div>
                               </div>
                           </td>
                           <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-blue-600 transition-all"><Eye size={16} /></button>
-                                  {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 hover:text-[#000000] transition-all"><Pencil size={16} /></button>}
-                                  {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 hover:text-red-500 transition-all"><Trash2 size={16} /></button>}
+                                  <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-indigo-600 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Quick View"><Eye size={16} /></button>
+                                  {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 hover:text-black bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Edit Item"><Pencil size={16} /></button>}
+                                  {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Delete Item"><Trash2 size={16} /></button>}
                               </div>
                           </td>
                       </tr>
                   ))}
               </tbody>
           </table>
-          <div className="p-4 border-t border-gray-50 bg-gray-50/30">
+          <div className="p-6 border-t border-gray-50 bg-gray-50/30 flex justify-center">
               <Pagination 
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -689,58 +702,73 @@ const Inventory = () => {
       </div>
 
       {/* Mobile View Cards */}
-      <div className="lg:hidden space-y-3 mb-8">
+      <div className="lg:hidden space-y-4 mb-8">
           {currentItems.map((item) => (
-              <div key={item._id} className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm active:scale-[0.98] transition-all">
-                  <div className="flex justify-between items-start mb-3">
+              <div key={item._id} className="bg-white border border-gray-100 p-5 rounded-3xl shadow-sm transition-all relative overflow-hidden group active:scale-[0.99]">
+                  {/* Subtle Stock Gradient Bar at the bottom */}
+                  <div className={cn(
+                      "absolute bottom-0 left-0 h-1 transition-all group-hover:h-1.5",
+                      item.stock <= (item.minStock || 5) ? "bg-orange-500" : item.stock < 0 ? "bg-red-500" : "bg-green-500"
+                  )} style={{ width: '100%' }}></div>
+
+                  <div className="flex justify-between items-start mb-4">
                       <div className="flex-1 min-w-0 mr-4">
-                          <h3 className="font-bold text-gray-900 truncate">{item.name}</h3>
-                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">#{item.code}</span>
-                              <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">HSN: {item.hsn || '-'}</span>
-                              <span className="text-[10px] text-indigo-500 font-black uppercase tracking-widest">{item.category}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-bold uppercase tracking-widest">
+                          <h3 className="font-black text-gray-900 text-base truncate tracking-tight">{item.name}</h3>
+                          <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter bg-gray-50 px-1.5 py-0.5 rounded">#{item.code || 'N/A'}</span>
+                              <span className="text-[10px] text-indigo-500 font-black uppercase tracking-widest bg-indigo-50 px-1.5 py-0.5 rounded">{item.category || 'NO CAT'}</span>
+                              <span className="text-[10px] font-bold text-gray-400 uppercase flex items-center gap-1">
+                                  <Database size={10} />
                                   {(() => {
                                       if (!item.godown) return 'PRI';
                                       const matchedGodown = godowns.find(g => (g._id || g.id) === item.godown);
-                                      if (matchedGodown) return matchedGodown.name.substring(0, 3).toUpperCase();
-                                      const godownStr = String(item.godown);
-                                      const nameMatch = godownStr.match(/^(.+?)\s*\(/);
-                                      const name = nameMatch ? nameMatch[1] : godownStr;
-                                      return name.substring(0, 3).toUpperCase();
+                                      return matchedGodown ? matchedGodown.name.substring(0, 3).toUpperCase() : 'GOD';
                                   })()}
                               </span>
                           </div>
                       </div>
-                      <span className={`shrink-0 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${getStockStyle(item.stock, item.minStock)}`}>
+                      <div className={cn(
+                          "shrink-0 px-3 py-1 rounded-2xl text-[11px] font-black uppercase tracking-widest border shadow-sm",
+                          getStockStyle(item.stock, item.minStock)
+                      )}>
                           {item.stock} {item.unit}
-                      </span>
+                      </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-gray-50">
+                  <div className="grid grid-cols-2 gap-6 py-4 border-y border-gray-50 mb-4 bg-gray-50/20 px-2 rounded-2xl">
                       <div>
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Sale Price</p>
-                          <p className="font-bold italic text-gray-900 tabular-nums">₹{item.sellingPrice ? item.sellingPrice.toLocaleString() : 0}</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                              <Tag size={10} /> Selling Price
+                          </p>
+                          <p className="font-black italic text-gray-900 text-lg tabular-nums">₹{item.sellingPrice?.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
-                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">M.R.P</p>
-                          <p className="font-bold italic text-gray-400 line-through tabular-nums">₹{item.mrp ? item.mrp.toLocaleString() : 0}</p>
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Stock Value</p>
+                          <p className="font-bold italic text-indigo-600 tabular-nums">₹{((item.stock || 0) * (item.purchasePrice || 0)).toLocaleString()}</p>
                       </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
-                          Stock History
-                      </button>
-                      <div className="flex items-center gap-1">
-                          <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 bg-gray-50 rounded-xl hover:text-blue-600"><Eye size={18} /></button>
-                          {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 bg-gray-50 rounded-xl hover:text-black"><Pencil size={18} /></button>}
-                          {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 bg-gray-50 rounded-xl active:text-red-500"><Trash2 size={18} /></button>}
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">Purchase</span>
+                              <span className="font-bold text-gray-600 text-xs">₹{item.purchasePrice?.toLocaleString()}</span>
+                          </div>
+                          <div className="h-6 w-px bg-gray-200"></div>
+                          <div className="flex flex-col">
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-tight">HSN</span>
+                              <span className="font-bold text-emerald-600 text-xs">{item.hsn || '-'}</span>
+                          </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <button onClick={() => handleViewItem(item)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Eye size={18} /></button>
+                          {canEdit && <button onClick={() => handleEditItem(item)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Pencil size={18} /></button>}
+                          {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 active:text-red-500"><Trash2 size={18} /></button>}
                       </div>
                   </div>
               </div>
           ))}
-          <div className="pt-4 flex justify-center">
+          <div className="pt-6 flex justify-center">
               <Pagination 
                 currentPage={currentPage}
                 totalPages={totalPages}

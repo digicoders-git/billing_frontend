@@ -389,101 +389,108 @@ const AddPurchaseReturn = () => {
                 </div>
                 
                 {/* Desktop Table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full border-collapse">
+                <div className="hidden md:block overflow-x-auto min-w-0">
+                  <table className="w-full border-collapse min-w-[1400px]">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                        <th className="px-4 py-3 text-left w-12">NO</th>
-                        <th className="px-4 py-3 text-left min-w-[200px]">ITEMS/ SERVICES</th>
-                        <th className="px-4 py-3 text-left w-24">HSN</th>
-                        <th className="px-4 py-3 text-right w-28">MRP (₹)</th>
-                        <th className="px-4 py-3 text-center w-24">QTY</th>
-                        <th className="px-4 py-3 text-right w-28">PRICE (₹)</th>
-                        <th className="px-4 py-3 text-left w-32">GST</th>
-                        <th className="px-4 py-3 text-right w-24">DISC %</th>
-                        <th className="px-4 py-3 text-right w-32">AMOUNT (₹)</th>
-                        <th className="px-4 py-3 text-center w-10"></th>
+                        <th className="px-6 py-5 text-left w-16">NO</th>
+                        <th className="px-6 py-5 text-left min-w-[300px]">ITEMS/ SERVICES</th>
+                        <th className="px-6 py-5 text-left w-32">HSN</th>
+                        <th className="px-6 py-5 text-right w-40">MRP (₹)</th>
+                        <th className="px-6 py-5 text-center w-36">QTY</th>
+                        <th className="px-6 py-5 text-right w-40">PRICE (₹)</th>
+                        <th className="px-6 py-5 text-left w-44">GST</th>
+                        <th className="px-6 py-5 text-right w-36">DISC %</th>
+                        <th className="px-6 py-5 text-right w-44">AMOUNT (₹)</th>
+                        <th className="px-6 py-5 text-center w-12"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {formData.items.map((item, index) => (
                         <tr key={item.id || item._id} className="hover:bg-gray-50 transition-colors group">
-                          <td className="px-4 py-3 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-6 py-5 text-center text-sm text-gray-400 font-medium">{index + 1}</td>
+                          <td className="px-6 py-5">
                             <div 
-                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm font-medium text-gray-800 hover:border-indigo-400 focus-within:border-indigo-500 transition-all cursor-pointer flex items-center gap-2"
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-sm font-medium text-gray-800 hover:border-indigo-400 focus-within:border-indigo-500 transition-all cursor-pointer flex items-center gap-2"
                                 onClick={() => {
                                     setActiveItemIndex(index);
                                     setShowItemPicker(true);
                                 }}
                             >
                                 {item.name ? (
-                                    <span className="flex-1 truncate">{item.name}</span>
+                                    <div className="flex flex-col flex-1 truncate text-left">
+                                        <span className="font-black text-gray-900 truncate uppercase tracking-tight">{item.name}</span>
+                                        {item.code && <span className="text-[9px] text-gray-400 font-bold tracking-widest uppercase">Code: {item.code}</span>}
+                                    </div>
                                 ) : (
-                                    <span className="flex-1 text-gray-400">Search Item...</span>
+                                    <span className="flex-1 text-gray-400 font-bold uppercase tracking-widest text-[10px] text-left">Search Item...</span>
                                 )}
+                                <Search size={14} className="text-gray-300 group-hover:text-indigo-500 transition-colors" />
                             </div>
                           </td>
-                          <td className="px-2 py-3">
+                          <td className="px-4 py-5 font-black uppercase text-[10px] items-center">
                             <input 
                               type="text" 
-                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-center font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-center font-black text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all uppercase"
                               placeholder="HSN"
                               value={item.hsn}
                               onChange={(e) => updateItem(item.id || item._id, 'hsn', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-3">
+                          <td className="px-4 py-5">
                             <input 
                               type="number" 
-                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-sm text-right font-black text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               placeholder="0"
                               value={item.mrp || ''}
                               onChange={(e) => updateItem(item.id || item._id, 'mrp', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-3">
-                            <div className="flex items-center justify-center gap-1">
+                          <td className="px-4 py-5 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
                               <input 
                                 type="number" 
-                                className="w-12 bg-transparent border-b border-gray-200 px-1 py-1 text-center text-sm font-bold text-indigo-600 focus:border-indigo-500 outline-none"
+                                className="w-14 bg-transparent border-b border-gray-200 px-1 py-1.5 text-center text-sm font-black text-indigo-600 focus:border-indigo-500 outline-none"
                                 value={item.qty}
+                                onFocus={(e) => e.target.select()}
                                 onChange={(e) => updateItem(item.id || item._id, 'qty', e.target.value)}
                               />
-                              <span className="text-[9px] text-gray-400 font-medium uppercase">{item.unit}</span>
+                              <span className="text-[9px] text-gray-400 font-black uppercase tracking-tighter">{item.unit || 'PCS'}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-3">
+                          <td className="px-4 py-5">
                              <input 
                               type="number" 
-                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-sm text-right font-medium text-gray-800 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-sm text-right font-black text-gray-800 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               value={item.rate}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => updateItem(item.id || item._id, 'rate', e.target.value)}
                             />
                           </td>
-                          <td className="px-2 py-3">
+                          <td className="px-4 py-5">
                             <select
                               value={item.gstRate}
                               onChange={(e) => updateItem(item.id || item._id, 'gstRate', e.target.value)}
-                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all cursor-pointer"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-[10px] font-black text-gray-600 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all cursor-pointer uppercase"
                             >
                               {gstOptions.map(opt => (
                                 <option key={opt} value={opt}>{opt}</option>
                               ))}
                             </select>
                           </td>
-                          <td className="px-2 py-3">
+                          <td className="px-4 py-5">
                              <input 
                               type="number" 
-                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1 text-xs text-right font-medium text-gray-500 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
+                              className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-sm text-right font-black text-gray-400 hover:border-gray-300 focus:border-indigo-500 outline-none transition-all"
                               value={item.discount}
+                              onFocus={(e) => e.target.select()}
                               onChange={(e) => updateItem(item.id || item._id, 'discount', e.target.value)}
                             />
                           </td>
-                          <td className="px-4 py-3 text-right font-bold text-indigo-600 text-sm">
-                            ₹ {item.amount.toLocaleString()}
+                          <td className="px-6 py-5 text-right font-black text-indigo-600 text-sm italic">
+                            ₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-2 py-3 text-center">
+                          <td className="px-4 py-5 text-center">
                              <Trash2 
                                size={16} 
                                className="text-gray-300 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100 mx-auto"
@@ -551,14 +558,13 @@ const AddPurchaseReturn = () => {
                   ))}
                 </div>
 
-                {/* Add Item Button */}
-                <div className="p-4 border-t border-gray-100 bg-gray-50/30">
+                <div className="p-4 border-t border-gray-100 bg-gray-50/30 text-center">
                   <div 
                     className="w-full h-12 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-white hover:border-indigo-400 transition-all cursor-pointer group"
                     onClick={addItem}
                   >
                     <Plus size={20} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                    <span className="text-sm font-bold text-gray-500 group-hover:text-indigo-600 uppercase tracking-wider">Add Item</span>
+                    <span className="text-sm font-black text-gray-500 group-hover:text-indigo-600 uppercase tracking-widest">Add Return Item</span>
                   </div>
                 </div>
               </div>
@@ -633,66 +639,79 @@ const AddPurchaseReturn = () => {
               </div>
 
               {/* Settlement Summary */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 shadow-sm">
-                <div className="space-y-3">
-                   <div className="flex justify-between items-center">
-                     <span className="text-xs font-bold text-gray-400 uppercase">Subtotal</span>
+              <div className="bg-white rounded-3xl border border-gray-200 p-8 space-y-6 shadow-sm">
+                <div className="space-y-4">
+                   {/* Subtotal */}
+                   <div className="flex justify-between items-center group">
+                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
                      <span className="text-sm font-black text-gray-800">₹ {totals.subtotal.toLocaleString()}</span>
                    </div>
                    
-                   <div className="flex justify-between items-center group gap-2">
-                     <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
-                            <Plus size={10} /> Add Charges
-                        </span>
-                     </div>
-                     <input 
-                        type="number" 
-                        value={formData.additionalCharges} 
-                        onChange={(e) => setFormData({...formData, additionalCharges: parseFloat(e.target.value) || 0})}
-                        className="w-20 text-right bg-transparent border-b border-dashed border-gray-200 outline-none text-xs font-bold"
-                     />
+                   {/* Additional Charges */}
+                   {/* Additional Charges */}
+                   <div className="flex justify-between items-center gap-2 py-3 border-t border-dashed border-gray-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Additional Charges</span>
+                      <div className="flex items-center bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-200 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-50 transition-all w-28">
+                           <span className="text-slate-400 text-xs font-bold mr-1">₹</span>
+                           <input 
+                               type="number" 
+                               value={formData.additionalCharges || ''} 
+                               onFocus={(e) => e.target.select()}
+                               onChange={(e) => setFormData({...formData, additionalCharges: e.target.value})}
+                               placeholder="0"
+                               className="w-full bg-transparent border-none outline-none text-right font-bold text-sm text-slate-700 p-0 placeholder:text-slate-300"
+                           />
+                      </div>
                    </div>
 
-                   <div className="flex justify-between items-center group gap-2">
-                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1 cursor-pointer">
-                            <Plus size={10} /> Discount
-                        </span>
-                        <select 
-                            value={formData.overallDiscountType}
-                            onChange={(e) => setFormData({...formData, overallDiscountType: e.target.value})}
-                            className="text-[9px] bg-blue-50 text-blue-600 border-none rounded p-0.5 outline-none"
-                        >
-                            <option value="percentage">%</option>
-                            <option value="fixed">Flat</option>
-                        </select>
-                     </div>
-                     <input 
-                        type="number" 
-                        value={formData.overallDiscount} 
-                        onChange={(e) => setFormData({...formData, overallDiscount: parseFloat(e.target.value) || 0})}
-                         className="w-20 text-right bg-transparent border-b border-dashed border-gray-200 outline-none text-xs font-bold"
-                     />
+                   {/* Overall Discount */}
+                   <div className="flex justify-between items-center gap-2 py-3 border-t border-dashed border-gray-100">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Discount</span>
+                      <div className="flex items-center bg-slate-50 rounded-lg border border-slate-200 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-50 transition-all overflow-hidden w-28">
+                         <div className="bg-white border-r border-slate-200 px-2 h-full flex items-center">
+                             <select 
+                                 value={formData.overallDiscountType}
+                                 onChange={(e) => setFormData({...formData, overallDiscountType: e.target.value})}
+                                 className="text-[10px] font-bold uppercase bg-transparent outline-none text-slate-500 cursor-pointer hover:text-indigo-600 transition-colors appearance-none"
+                             >
+                                 <option value="percentage">%</option>
+                                 <option value="fixed">₹</option>
+                             </select>
+                         </div>
+                         <input 
+                             type="number" 
+                             value={formData.overallDiscount || ''} 
+                             onFocus={(e) => e.target.select()}
+                             onChange={(e) => setFormData({...formData, overallDiscount: e.target.value})}
+                             placeholder="0"
+                             className="w-full bg-transparent border-none outline-none text-right font-bold text-sm text-slate-700 py-1.5 px-2 placeholder:text-slate-300"
+                         />
+                      </div>
                    </div>
                 </div>
 
-                <div className="pt-2">
-                   <div className="flex items-center gap-2 mb-6 bg-gray-50 p-2 rounded-xl">
-                      <input 
-                            type="checkbox" 
-                            checked={formData.autoRoundOff}
-                            onChange={(e) => setFormData({...formData, autoRoundOff: e.target.checked})}
-                            className="w-4 h-4 rounded text-black border-gray-300 focus:ring-0 cursor-pointer" 
-                      />
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-tighter">Auto Round Off</span>
+                <div className="pt-4 border-t border-gray-100 space-y-4">
+                   <div className="bg-black p-5 rounded-[2rem] text-white shadow-2xl transform hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center">
+                       <div className="text-[9px] font-black text-gray-500 uppercase tracking-[4px] mb-1">Total Return Value</div>
+                       <div className="text-3xl font-black tracking-tight">₹ {totals.roundedTotal.toLocaleString()}</div>
                    </div>
 
-                   <div className="space-y-1">
-                       <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Grand Total</label>
-                       <div className="bg-black p-4 rounded-2xl text-white shadow-xl shadow-gray-200 transform hover:scale-[1.02] transition-transform duration-300">
-                           <div className="text-3xl font-black tracking-tight">₹ {totals.roundedTotal.toLocaleString()}</div>
-                       </div>
+                   <div className="space-y-4 pt-2">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <input 
+                                type="checkbox" 
+                                id="autoRoundOff"
+                                checked={formData.autoRoundOff}
+                                onChange={(e) => setFormData({...formData, autoRoundOff: e.target.checked})}
+                                className="w-4 h-4 rounded text-black border-gray-300 focus:ring-0 cursor-pointer" 
+                           />
+                           <label htmlFor="autoRoundOff" className="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer">Round Off</label>
+                         </div>
+                         {formData.autoRoundOff && (
+                            <span className="text-[10px] font-bold text-gray-400">{totals.roundOffDiff}</span>
+                         )}
+                      </div>
                    </div>
                 </div>
               </div>

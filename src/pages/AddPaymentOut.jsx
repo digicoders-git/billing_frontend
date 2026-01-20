@@ -175,96 +175,24 @@ const AddPaymentOut = () => {
                                             </div>
                                             <div className="relative">
                                                 <div 
-                                                    className="w-full flex justify-between items-center px-6 py-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-white hover:border-indigo-300 transition-all"
-                                                    onClick={() => setShowPartyDropdown(!showPartyDropdown)}
+                                                    className="w-full flex items-center justify-between px-6 py-4 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-black/20 hover:shadow-lg transition-all group"
+                                                    onClick={() => setShowPartyDropdown(true)}
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <div className={cn("p-2 rounded-lg", formData.party ? "bg-indigo-600 text-white" : "bg-white text-gray-300 border border-gray-200")}>
+                                                        <div className={cn("p-2.5 rounded-xl transition-colors", formData.party ? "bg-black text-white" : "bg-gray-100 text-gray-400 group-hover:bg-gray-200")}>
                                                             <Truck size={20} />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className={cn("text-sm font-bold", formData.partyName ? "text-gray-900" : "text-gray-400")}>
+                                                            <span className={cn("text-sm font-bold uppercase tracking-tight truncate", formData.partyName ? "text-gray-900" : "text-gray-400")}>
                                                                 {formData.partyName || "Select Vendor"}
                                                             </span>
                                                             {formData.party && (
-                                                                <span className="text-xs text-gray-400 mt-0.5">Vendor selected</span>
+                                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Vendor selected</span>
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <ChevronDown size={20} className={cn("text-gray-400 transition-transform", showPartyDropdown && "rotate-180")} />
+                                                    <ChevronDown size={20} className={cn("text-gray-300 transition-transform group-hover:text-black", showPartyDropdown && "rotate-180")} />
                                                 </div>
-
-                                                {showPartyDropdown && (
-                                                    <>
-                                                        <div className="fixed inset-0 z-50 lg:hidden bg-black/40 backdrop-blur-sm" onClick={() => setShowPartyDropdown(false)} />
-                                                        <div className="absolute top-full left-0 w-full mt-4 bg-white border border-gray-100 rounded-[32px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                                                            <div className="p-6 border-b border-gray-50 bg-gray-50/50">
-                                                                <div className="relative">
-                                                                    <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" />
-                                                                    <input 
-                                                                        type="text" 
-                                                                        className="w-full pl-14 pr-6 py-4 bg-white border-none rounded-2xl text-[13px] font-black uppercase tracking-widest focus:ring-4 focus:ring-indigo-50 outline-none transition-all shadow-sm"
-                                                                        placeholder="SEARCH VENDOR BY NAME OR PHONE ..."
-                                                                        autoFocus
-                                                                        value={searchParty}
-                                                                        onChange={(e) => setSearchParty(e.target.value)}
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="max-h-80 overflow-y-auto py-3 custom-scrollbar">
-                                                                {fetchingParties ? (
-                                                                    <div className="py-20 flex flex-col items-center gap-4 text-gray-400">
-                                                                        <Loader2 size={32} className="animate-spin text-indigo-500" />
-                                                                        <span className="text-[10px] font-black uppercase tracking-[4px]">Fetching Ledger...</span>
-                                                                    </div>
-                                                                ) : filteredParties.length === 0 ? (
-                                                                    <div className="py-20 text-center text-gray-400">
-                                                                        <span className="text-[10px] font-black uppercase tracking-[4px]">No Matching Accounts Found</span>
-                                                                    </div>
-                                                                ) : (
-                                                                    filteredParties.map(party => (
-                                                                        <div 
-                                                                            key={party._id}
-                                                                            className="px-8 py-5 hover:bg-indigo-50/50 cursor-pointer border-b border-gray-50 last:border-0 transition-all flex items-center justify-between group/item"
-                                                                            onClick={() => {
-                                                                                setFormData({
-                                                                                    ...formData, 
-                                                                                    party: party._id,
-                                                                                    partyName: party.name
-                                                                                });
-                                                                                setShowPartyDropdown(false);
-                                                                            }}
-                                                                        >
-                                                                            <div className="flex flex-col">
-                                                                                <div className="font-black text-[15px] text-gray-800 uppercase tracking-tight group-hover/item:text-indigo-600 transition-colors">{party.name}</div>
-                                                                                <div className="flex items-center gap-2 mt-1">
-                                                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{party.city || 'Location N/A'}</span>
-                                                                                    <span className="w-1 h-1 rounded-full bg-gray-200" />
-                                                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{party.phone}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="flex flex-col items-end">
-                                                                                <div className={cn(
-                                                                                    "text-[10px] font-black px-3 py-1.5 rounded-xl uppercase tracking-wider",
-                                                                                    party.balanceType === 'To Pay' ? "bg-red-50 text-red-500" : "bg-green-50 text-green-500"
-                                                                                )}>
-                                                                                    {party.balanceType === 'To Pay' ? 'Payable' : 'Receivable'}: ₹{party.openingBalance?.toLocaleString()}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))
-                                                                )}
-                                                            </div>
-                                                            <button 
-                                                                onClick={() => navigate('/add-party')}
-                                                                className="w-full py-6 text-indigo-600 font-black text-[12px] uppercase tracking-[4px] bg-gray-50/50 hover:bg-indigo-50 hover:underline transition-all flex items-center justify-center gap-3"
-                                                            >
-                                                                <Plus size={16} /> Link New Vendor Account
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
                                             </div>
                                         </div>
 
@@ -301,14 +229,14 @@ const AddPaymentOut = () => {
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center">
                                                 <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
-                                                <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded uppercase">Payment Out</span>
+                                                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded uppercase tracking-wider">Payment Out</span>
                                             </div>
                                             <div className="relative">
-                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-2xl text-red-500">₹</div>
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-2xl text-gray-900">₹</div>
                                                 <input 
                                                     type="number" 
                                                     placeholder="0.00"
-                                                    className="w-full h-20 pl-12 pr-6 bg-red-50 border-2 border-red-100 rounded-xl text-3xl font-bold text-gray-900 focus:bg-white focus:border-red-500 outline-none transition-all placeholder:text-red-200"
+                                                    className="w-full h-20 pl-12 pr-6 bg-white border-2 border-gray-100 rounded-xl text-3xl font-bold text-gray-900 focus:border-black focus:shadow-lg focus:shadow-black/5 outline-none transition-all placeholder:text-gray-200"
                                                     value={formData.amount}
                                                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
                                                 />
@@ -321,7 +249,7 @@ const AddPaymentOut = () => {
                                                 <label className="text-xs font-bold text-gray-600 uppercase block">Payment Method</label>
                                                 <div className="relative">
                                                     <select 
-                                                        className="w-full h-12 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-800 appearance-none hover:bg-white hover:border-indigo-300 focus:bg-white focus:border-indigo-500 outline-none transition-all cursor-pointer"
+                                                        className="w-full h-12 pl-4 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-800 appearance-none hover:bg-white hover:border-black/20 focus:bg-white focus:border-black outline-none transition-all cursor-pointer"
                                                         value={formData.paymentMode}
                                                         onChange={(e) => setFormData({...formData, paymentMode: e.target.value, utrNumber: ''})}
                                                     >
@@ -336,7 +264,7 @@ const AddPaymentOut = () => {
                                             <div className="space-y-2">
                                                 <label className="text-xs font-bold text-gray-600 uppercase block">Notes</label>
                                                 <textarea 
-                                                    className="w-full h-12 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 focus:bg-white focus:border-indigo-500 outline-none transition-all resize-none placeholder:text-gray-400"
+                                                    className="w-full h-12 px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 focus:bg-white focus:border-black outline-none transition-all resize-none placeholder:text-gray-400"
                                                     placeholder="Add remarks..."
                                                     value={formData.notes}
                                                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
@@ -411,6 +339,97 @@ const AddPaymentOut = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Vendor Selection Modal */}
+            {showPartyDropdown && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+                    <div 
+                        className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                         {/* Modal Header */}
+                         <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Select Vendor</h3>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Select account to make payment to</p>
+                            </div>
+                            <div 
+                                onClick={() => setShowPartyDropdown(false)}
+                                className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-100 flex items-center justify-center cursor-pointer transition-all shadow-sm active:scale-95"
+                            >
+                                <X size={20} />
+                            </div>
+                         </div>
+
+                         {/* Search Bar */}
+                         <div className="p-6 pb-2">
+                            <div className="relative group/search">
+                                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-black transition-colors" size={20} />
+                                <input 
+                                    type="text"
+                                    placeholder="Search vendor by name..."
+                                    className="w-full pl-14 pr-5 py-4 bg-gray-50 font-bold border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-black transition-all placeholder:text-gray-400 text-sm"
+                                    autoFocus
+                                    value={searchParty}
+                                    onChange={(e) => setSearchParty(e.target.value)}
+                                />
+                            </div>
+                         </div>
+
+                         {/* List */}
+                         <div className="max-h-[400px] overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
+                            {fetchingParties ? (
+                                <div className="py-12 flex flex-col items-center gap-4 text-gray-400">
+                                    <Loader2 size={32} className="animate-spin text-black" />
+                                    <span className="text-[10px] font-black uppercase tracking-[4px]">Loading...</span>
+                                </div>
+                            ) : filteredParties.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No matching vendors found</p>
+                                </div>
+                            ) : (
+                                filteredParties.map(party => (
+                                    <div 
+                                        key={party._id}
+                                        onClick={() => {
+                                            setFormData({
+                                                ...formData, 
+                                                party: party._id,
+                                                partyName: party.name
+                                            });
+                                            setShowPartyDropdown(false);
+                                            setSearchParty('');
+                                        }}
+                                        className="group p-4 rounded-2xl hover:bg-black/5 border border-transparent hover:border-black/5 cursor-pointer transition-all flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center font-black text-lg group-hover:bg-white group-hover:text-black group-hover:shadow-sm transition-all">
+                                                {party.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-sm text-gray-900 uppercase tracking-tight group-hover:underline decoration-2 underline-offset-2">{party.name}</h4>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{party.city || 'No Location'} • {party.phone || 'No Phone'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Payable</div>
+                                            <div className="text-sm font-black text-red-500">₹ {(party.openingBalance || 0).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            
+                            <div 
+                                onClick={() => navigate('/add-party')}
+                                className="mt-2 p-4 border-2 border-dashed border-gray-200 rounded-2xl flex items-center justify-center gap-2 cursor-pointer hover:border-black hover:bg-black/5 transition-all group"
+                            >
+                                <Plus size={18} className="text-gray-400 group-hover:text-black transition-colors" />
+                                <span className="text-xs font-black text-gray-500 uppercase tracking-widest group-hover:text-black transition-colors">Link New Vendor</span>
+                            </div>
+                         </div>
+                    </div>
+                </div>
+            )}
         </DashboardLayout>
     );
 };

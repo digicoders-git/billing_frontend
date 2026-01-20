@@ -178,7 +178,7 @@ const ViewPurchaseOrder = () => {
                  </div>
 
                  {/* Party Details View */}
-                 <div className="p-12 grid grid-cols-1 md:grid-cols-2 gap-16 bg-[#F9FAFF]/50 border-b border-gray-50">
+                 <div className="p-12 grid grid-cols-1 md:grid-cols-2 gap-12 bg-[#F9FAFF]/50 border-b border-gray-50 text-left">
                      <div className="space-y-8">
                          <div className="flex items-center gap-4">
                             <div className="w-1.5 h-12 bg-indigo-500 rounded-full" />
@@ -213,15 +213,24 @@ const ViewPurchaseOrder = () => {
                              )}
                          </div>
                      </div>
-                     <div className="flex flex-col justify-center items-end">
-                        <div className="p-10 border-4 border-dashed border-indigo-100/50 rounded-[40px] flex flex-col items-center gap-4 group hover:border-indigo-400 transition-all">
-                             <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-xl shadow-indigo-500/5 border border-indigo-50">
-                                <ShoppingCart size={32} />
-                             </div>
-                             <div className="text-center">
-                                <span className="text-[10px] font-black text-gray-300 uppercase tracking-[4px] block mb-1">Procurement Status</span>
-                                <span className="text-sm font-black text-indigo-500 uppercase italic tracking-widest">{orderData.status}</span>
-                             </div>
+                     
+                     {/* Moved Notes & Terms to Middle Section to fill space */}
+                     <div className="flex flex-col justify-between space-y-6 pl-4 border-l border-gray-100/50">
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2">
+                                <Hash size={12} className="text-gray-400" />
+                                Audit Narratives
+                            </h4>
+                            <div className="p-6 bg-gray-50 rounded-[20px] border border-gray-100/50 text-xs font-medium text-gray-500 leading-relaxed italic relative">
+                                 "{orderData.notes || 'Transaction recorded for inventory requisition.'}"
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">Standard Terms</h4>
+                            <p className="text-[10px] font-bold text-gray-400 leading-loose uppercase tracking-wide">
+                                {orderData.terms || 'Standard business terms apply. Goods once sold will not be taken back.'}
+                            </p>
                         </div>
                      </div>
                  </div>
@@ -266,68 +275,45 @@ const ViewPurchaseOrder = () => {
                  </div>
 
                  {/* Totals & Meta (Registry Footer) */}
-                 <div className="p-12 bg-gray-900 mt-auto relative overflow-hidden">
-                     <div className="absolute inset-0 bg-linear-to-br from-indigo-900 to-black opacity-100" />
-                     <div className="absolute left-0 bottom-0 w-full h-1 bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.5)]" />
-                     
-                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-end gap-12">
-                         <div className="flex-1 space-y-8 min-w-[300px]">
-                            <div className="space-y-4">
-                                <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[5px] flex items-center gap-3">
-                                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                                    Procurement Audit Narratives
-                                </h4>
-                                <div className="p-8 bg-white/5 backdrop-blur-md rounded-[32px] border border-white/10 italic text-xs text-indigo-100/70 leading-relaxed font-bold uppercase tracking-widest relative overflow-hidden group">
-                                     <div className="absolute left-0 top-0 bottom-0 w-2 bg-indigo-500" />
-                                     "{orderData.notes || 'Transaction recorded for inventory requisition and supplier placement.'}"
-                                </div>
-                            </div>
-                            <div className="space-y-2 max-w-lg">
-                                <p className="text-[9px] font-black text-indigo-900 bg-indigo-300 rounded-lg px-3 py-1 inline-block uppercase tracking-[2px] mb-2 italic">Standard Audit Terms</p>
-                                <p className="text-[10px] font-bold text-white/30 leading-loose uppercase tracking-tighter">
-                                    {orderData.terms || 'Standard business terms apply for procurement orders. Prices mentioned are subject to market variations unless fixed.'}
-                                </p>
-                            </div>
+                 <div className="p-10 bg-gray-50 border-t border-gray-100 mt-auto">
+                     <div className="flex flex-col md:flex-row justify-between items-end gap-12">
+                         <div className="flex-1 flex flex-col justify-end items-start space-y-4">
+                              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Authorized Signatory</p>
+                              <div className="h-16 w-32 border-b-2 border-dashed border-gray-300 mb-2"></div>
+                              <p className="text-[8px] font-bold text-gray-400 uppercase">For FAIZAN MACHINERY</p>
                          </div>
 
-                         <div className="w-full md:w-96 space-y-6">
-                              <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 space-y-6 shadow-2xl">
-                                 <div className="flex justify-between items-center text-[11px] text-white/30 font-black uppercase tracking-[3px]">
-                                     <span>Indent Registry Value</span>
-                                     <span className="text-white not-italic">₹ {orderData.subtotal?.toLocaleString() || '0'}</span>
+                         <div className="w-full md:w-80 space-y-4">
+                              <div className="space-y-3">
+                                 <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                     <span>Subtotal</span>
+                                     <span className="text-gray-900">₹ {orderData.subtotal?.toLocaleString() || '0'}</span>
                                  </div>
                                  {orderData.additionalCharges > 0 && (
-                                    <div className="flex justify-between items-center text-[11px] text-white/30 font-black uppercase tracking-[3px]">
-                                        <span>Logistics / Meta charges</span>
-                                        <span className="text-indigo-400 not-italic">+ ₹ {orderData.additionalCharges}</span>
+                                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                        <span>Logistics</span>
+                                        <span className="text-gray-900">+ ₹ {orderData.additionalCharges}</span>
                                     </div>
                                  )}
                                  {orderData.overallDiscount > 0 && (
-                                    <div className="flex justify-between items-center text-[11px] text-rose-400 font-black uppercase tracking-[3px]">
-                                        <span>Indent Rebates</span>
-                                        <span className="">- ₹ {orderData.overallDiscount.toLocaleString()}</span>
+                                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                        <span>Discount</span>
+                                        <span className="text-rose-500">- ₹ {orderData.overallDiscount.toLocaleString()}</span>
                                     </div>
                                  )}
-                                 <div className="pt-6 border-t border-white/10 flex justify-between items-center text-[10px] font-black text-white/20 italic uppercase tracking-widest">
-                                     <span>Round Off Diff</span>
+                                 <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between items-center text-[10px] font-bold text-gray-400">
+                                     <span>Round Off</span>
                                      <span>{orderData.roundOffDiff > 0 ? '+' : ''} ₹ {orderData.roundOffDiff || '0.00'}</span>
-                                 </div>
-                                 
-                                 <div className="pt-6 border-t border-indigo-500/20">
-                                    <span className="text-[10px] font-black uppercase tracking-[5px] text-indigo-500 block mb-3 italic">Final Acquisition Indent</span>
-                                    <div className="text-5xl font-black italic tracking-tighter text-white flex items-center gap-4">
-                                        <span className="text-xl font-bold opacity-30 not-italic">₹</span>
-                                        {orderData.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                                    </div>
                                  </div>
                               </div>
                               
-                              <div className="flex flex-col items-center gap-4 pt-10">
-                                  <div className="w-48 h-px bg-white/10" />
-                                  <div className="flex flex-col items-center">
-                                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[5px] italic">PROCUREMENT AUDIT SEAL</p>
-                                      <p className="text-[10px] font-bold text-indigo-500/50 uppercase mt-2">For FAIZAN MACHINERY & AQUA CULTURE</p>
-                                  </div>
+                              <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                                 <div className="flex justify-between items-center mb-1">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Indent</span>
+                                 </div>
+                                 <div className="text-3xl font-black tracking-tight text-gray-900">
+                                    ₹ {orderData.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                                 </div>
                               </div>
                          </div>
                      </div>

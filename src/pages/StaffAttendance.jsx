@@ -188,131 +188,194 @@ const StaffAttendance = () => {
         }
     };
 
+    // Calculate Stats
+    const stats = {
+        total: staffList.length,
+        present: staffList.filter(s => s.attendance?.status === 'Present').length,
+        absent: staffList.filter(s => s.attendance?.status === 'Absent').length,
+        halfDay: staffList.filter(s => s.attendance?.status === 'Half Day').length,
+        unmarked: staffList.filter(s => !s.attendance).length
+    };
+
     return (
         <DashboardLayout>
-            <div className="min-h-[calc(100vh-120px)] flex flex-col">
+            <div className="p-4 sm:p-6 space-y-6">
                 {/* Header */}
-                <div className="mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                         <h1 className="text-2xl font-bold text-gray-800">Staff Attendance & Payroll</h1>
-                         <p className="text-gray-500 mt-1 flex items-center gap-2">
-                            <Calendar size={16} />
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Staff Attendance</h1>
+                        <p className="text-sm font-medium text-gray-500 mt-1">
                             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                         </p>
+                        </p>
                     </div>
-                   
                     <button 
                         onClick={() => setShowAddStaffModal(true)}
-                        className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                        className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-all uppercase tracking-wider"
                     >
-                        <Plus size={20} /> Add New Staff
+                        <Plus size={18} /> Add Staff
                     </button>
                 </div>
 
-                {staffList.length === 0 ? (
-                    /* Empty State */
-                    <div className="flex-1 flex flex-col items-center justify-center text-center pb-20 animate-fade-in">
-                         <div className="bg-gray-50 p-8 rounded-full mb-6 relative">
-                            <div className="absolute inset-0 bg-blue-100/50 rounded-full animate-pulse"></div>
-                            <User size={64} className="text-blue-500 relative z-10" />
-                         </div>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-3">No Staff Members Found</h2>
-                        <p className="text-gray-500 font-medium mb-8 max-w-md">Get started by adding your staff members to manage their daily attendance, calculate salaries, and track advances.</p>
-                        <button 
-                            onClick={() => setShowAddStaffModal(true)}
-                            className="text-blue-600 font-bold hover:underline"
-                        >
-                            + Add your first staff member
-                        </button>
-                    </div>
-                ) : (
-                    /* Staff List Grid */
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-                        {staffList.map((staff) => (
-                            <div key={staff._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group relative overflow-hidden flex flex-col">
-                                {/* Top colored bar based on status */}
-                                <div className={`h-1.5 w-full ${staff.attendance ? (staff.attendance.status === 'Present' ? 'bg-green-500' : staff.attendance.status === 'Absent' ? 'bg-red-500' : 'bg-orange-500') : 'bg-gray-200'}`}></div>
-                                
-                                <div className="p-6 flex-1">
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center text-gray-700 font-bold text-xl uppercase shadow-inner">
-                                                {staff.name.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-bold text-lg text-gray-900 leading-tight">{staff.name}</h3>
-                                                <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-1 font-medium">
-                                                    <Phone size={12} />
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                        { label: 'Total Staff', value: stats.total, color: 'text-gray-900', bg: 'bg-white' },
+                        { label: 'Present Today', value: stats.present, color: 'text-green-600', bg: 'bg-green-50' },
+                        { label: 'Absent Today', value: stats.absent, color: 'text-red-500', bg: 'bg-red-50' },
+                        { label: 'Pending', value: stats.unmarked, color: 'text-orange-500', bg: 'bg-orange-50' }
+                    ].map((stat, i) => (
+                        <div key={i} className={`p-4 rounded-xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center ${stat.bg}`}>
+                            <span className={`text-2xl font-black ${stat.color}`}>{stat.value}</span>
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">{stat.label}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Staff List - Table View */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[400px]">
+                    {staffList.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 text-center">
+                            <div className="p-4 bg-gray-50 rounded-full mb-4">
+                                <User size={32} className="text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">No Staff Members</h3>
+                            <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">Add staff members to start tracking attendance and managing payroll.</p>
+                            <button 
+                                onClick={() => setShowAddStaffModal(true)}
+                                className="mt-6 text-sm font-bold text-indigo-600 hover:text-indigo-700 uppercase tracking-wider"
+                            >
+                                + Add First Staff
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Desktop Table */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-gray-200 bg-gray-50/30">
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-16">#</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Staff Name</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Contact</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Salary Info</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
+                                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {staffList.map((staff, index) => (
+                                            <tr key={staff._id} className="hover:bg-gray-50 transition-colors group">
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-400">
+                                                    {(index + 1).toString().padStart(2, '0')}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-black text-gray-600 uppercase">
+                                                            {staff.name.charAt(0)}
+                                                        </div>
+                                                        <span className="text-sm font-bold text-gray-900">{staff.name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-600">
                                                     {staff.mobile}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-gray-900">₹{staff.salary}</span>
+                                                        <span className="text-[10px] uppercase font-bold text-gray-400">{staff.salaryType}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {staff.attendance ? (
+                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wide border ${getStatusColor(staff.attendance.status)}`}>
+                                                            {staff.attendance.status}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wide bg-gray-100 text-gray-400 border border-gray-200">
+                                                            Pending
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button 
+                                                            onClick={() => openAttendanceModal(staff)}
+                                                            className="px-3 py-1.5 bg-black text-white text-[10px] font-bold uppercase tracking-wider rounded hover:bg-gray-800 transition-colors"
+                                                        >
+                                                            {staff.attendance ? 'Update' : 'Mark'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => openHistoryModal(staff)}
+                                                            className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
+                                                            title="View History"
+                                                        >
+                                                            <History size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDelete(staff._id, staff.name)}
+                                                            className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                                            title="Delete Staff"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile List View */}
+                            <div className="md:hidden divide-y divide-gray-100">
+                                {staffList.map((staff) => (
+                                    <div key={staff._id} className="p-4 space-y-3">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-black text-gray-600 uppercase">
+                                                    {staff.name.charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-bold text-gray-900">{staff.name}</h3>
+                                                    <p className="text-xs text-gray-500 font-medium">{staff.mobile}</p>
                                                 </div>
                                             </div>
+                                            {staff.attendance ? (
+                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase border ${getStatusColor(staff.attendance.status)}`}>
+                                                    {staff.attendance.status}
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-1 rounded text-[10px] font-black uppercase bg-gray-100 text-gray-400 border border-gray-200">
+                                                    Pending
+                                                </span>
+                                            )}
                                         </div>
                                         
-                                        <div className="relative z-10">
-                                            <button 
-                                                onClick={() => handleDelete(staff._id, staff.name)}
-                                                className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                                                title="Delete Staff"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                        <div className="flex items-center justify-between pt-2">
+                                            <div className="text-xs font-medium text-gray-500">
+                                                <span className="font-bold text-gray-900">₹{staff.salary}</span> / {staff.salaryType}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    onClick={() => openHistoryModal(staff)}
+                                                    className="p-2 bg-gray-50 text-gray-600 rounded-lg"
+                                                >
+                                                    <History size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => openAttendanceModal(staff)}
+                                                    className="px-4 py-2 bg-black text-white text-xs font-bold uppercase rounded-lg"
+                                                >
+                                                    {staff.attendance ? 'Update' : 'Mark Attendance'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    {/* Attendance Status Pill */}
-                                    <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-xl">
-                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Today's Status</span>
-                                        {staff.attendance ? (
-                                             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border ${getStatusColor(staff.attendance.status)}`}>
-                                                {staff.attendance.status === 'Present' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                                                <span className="text-xs font-bold uppercase">{staff.attendance.status}</span>
-                                             </div>
-                                        ) : (
-                                             <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-gray-200 bg-white text-gray-400">
-                                                <Clock size={14} />
-                                                <span className="text-xs font-bold uppercase">Not Marked</span>
-                                             </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Stats Grid */}
-                                    <div className="grid grid-cols-2 gap-4 mb-2">
-                                        <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50 hover:bg-indigo-50 transition-colors">
-                                            <p className="text-xs text-indigo-400 font-bold uppercase mb-1">Salary</p>
-                                            <p className="font-bold text-gray-900">₹{staff.salary}</p>
-                                            <p className="text-[10px] text-gray-400">{staff.salaryType}</p>
-                                        </div>
-                                        <div className={`p-3 rounded-xl border transition-colors ${staff.balanceType === 'To Pay' ? 'bg-red-50/50 border-red-100/50 hover:bg-red-50' : 'bg-green-50/50 border-green-100/50 hover:bg-green-50'}`}>
-                                            <p className={`text-xs font-bold uppercase mb-1 ${staff.balanceType === 'To Pay' ? 'text-red-400' : 'text-green-500'}`}>Balance</p>
-                                            <p className={`font-bold ${staff.balanceType === 'To Pay' ? 'text-red-600' : 'text-green-700'}`}>₹{staff.openingBalance}</p>
-                                            <p className={`text-[10px] ${staff.balanceType === 'To Pay' ? 'text-red-300' : 'text-green-300'}`}>{staff.balanceType}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex gap-3">
-                                    <button 
-                                        onClick={() => openAttendanceModal(staff)}
-                                        className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2
-                                            ${staff.attendance 
-                                                ? 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50' 
-                                                : 'bg-[#000000] text-white hover:bg-indigo-700 hover:shadow-indigo-300'}`}
-                                    >
-                                        {staff.attendance ? 'Edit Status' : 'Mark Present'}
-                                    </button>
-                                    <button 
-                                        onClick={() => openHistoryModal(staff)}
-                                        className="px-4 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-100 hover:text-gray-900 transition-colors"
-                                        title="View History"
-                                    >
-                                        <History size={20} />
-                                    </button>
-                                </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                )}
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Add Staff Modal */}

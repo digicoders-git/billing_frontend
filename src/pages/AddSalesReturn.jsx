@@ -5,10 +5,17 @@ import {
   Save, Plus, Trash2, User, Calendar, 
   Hash, FileText, Settings, Keyboard, 
   ArrowLeft, Search, ScanBarcode, X,
-  ChevronDown
+  ChevronDown, ShoppingCart, RotateCcw
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+
+const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 28% + Cess @ 60%"
+];
 
 const AddSalesReturn = () => {
   const navigate = useNavigate();
@@ -17,13 +24,18 @@ const AddSalesReturn = () => {
   const [itemsPool, setItemsPool] = useState([]); // Available items from DB
   const [loading, setLoading] = useState(true);
   
+  // Item Picker State
+  const [showItemPicker, setShowItemPicker] = useState(false);
+  const [pickerSearchTerm, setPickerSearchTerm] = useState('');
+  const [activeItemIndex, setActiveItemIndex] = useState(null);
+  
   const [formData, setFormData] = useState({
     returnNo: '',
     date: new Date().toISOString().split('T')[0],
     originalInvoiceNo: '',
     party: null,
     items: [
-      { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, tax: 0, amount: 0 }
+      { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', tax: 0, amount: 0 }
     ],
     notes: '',
     terms: '1. Goods once returned will be inspected for quality.\n2. Refunds will be processed within 7 working days.',
@@ -60,27 +72,39 @@ const AddSalesReturn = () => {
   }, []);
 
   // Handle Item Row Calculations
+  // Handle Item Row Calculations
   const updateItem = (id, field, value) => {
     setFormData(prev => {
       const newItems = prev.items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
           
-          // Auto-fill details if name matches an existing item (simple autocomplete logic)
-          if (field === 'name') {
-             const foundItem = itemsPool.find(i => i.name.toLowerCase() === value.toLowerCase());
-             if (foundItem) {
-                 updatedItem.itemId = foundItem._id;
-                 updatedItem.hsn = foundItem.hsn || '';
-                 updatedItem.rate = foundItem.sellingPrice || 0;
-                 updatedItem.unit = foundItem.unit || 'PCS';
-             }
+          // Calculate amount: ((qty * rate) - (qty * rate * discount / 100)) + tax
+          const qty = parseFloat(updatedItem.qty) || 0;
+          const rate = parseFloat(updatedItem.rate) || 0;
+          const discount = parseFloat(updatedItem.discount) || 0;
+
+          const baseAmount = qty * rate;
+          const discAmount = (baseAmount * discount) / 100;
+          const taxableAmount = baseAmount - discAmount;
+
+          // Calculate Tax based on GST Rate string
+          let taxRate = 0;
+          const rateStr = updatedItem.gstRate || 'None';
+          if (rateStr !== 'None' && rateStr !== 'Exempted') {
+              const matches = rateStr.match(/(\d+(\.\d+)?)%|@\s*(\d+(\.\d+)?)/g);
+              if (matches) {
+                  taxRate = matches.reduce((acc, val) => {
+                      const num = parseFloat(val.replace(/[^0-9.]/g, ''));
+                      return acc + (isNaN(num) ? 0 : num);
+                  }, 0);
+              }
           }
 
-          // Calculate amount: (qty * rate) - discount
-          const baseAmount = (updatedItem.qty || 0) * (updatedItem.rate || 0);
-          const discAmount = (baseAmount * (updatedItem.discount || 0)) / 100;
-          updatedItem.amount = baseAmount - discAmount;
+          const taxAmount = (taxableAmount * taxRate) / 100;
+          updatedItem.tax = taxAmount;
+          updatedItem.amount = taxableAmount + taxAmount;
+
           return updatedItem;
         }
         return item;
@@ -89,10 +113,48 @@ const AddSalesReturn = () => {
     });
   };
 
+  const selectItem = (itemData) => {
+      if (activeItemIndex === null) return;
+      
+      setFormData(prev => {
+          const newItems = [...prev.items];
+          
+          // Determine GST Percent from string
+          const gstStr = itemData.gstRate || 'None';
+          let gstPercent = 0;
+          if (gstStr.includes('@')) {
+              gstPercent = parseFloat(gstStr.split('@')[1]) || 0;
+          }
+
+          const rate = itemData.sellingPrice || 0;
+          const qty = newItems[activeItemIndex].qty || 1;
+          const taxableAmount = rate * qty;
+          const taxAmount = (taxableAmount * gstPercent) / 100;
+
+          newItems[activeItemIndex] = {
+              ...newItems[activeItemIndex],
+              itemId: itemData._id,
+              name: itemData.name,
+              hsn: itemData.hsn || '',
+              mrp: itemData.mrp || 0,
+              rate: rate,
+              unit: itemData.unit || 'PCS',
+              gstRate: gstStr,
+              discount: 0,
+              tax: taxAmount,
+              amount: taxableAmount + taxAmount
+          };
+          return { ...prev, items: newItems };
+      });
+      setShowItemPicker(false);
+      setPickerSearchTerm('');
+      setActiveItemIndex(null);
+  };
+
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, tax: 0, amount: 0 }]
+      items: [...prev.items, { id: Date.now(), itemId: null, name: '', hsn: '', qty: 1, unit: 'PCS', mrp: 0, rate: 0, discount: 0, gstRate: 'None', tax: 0, amount: 0 }]
     }));
   };
 
@@ -104,7 +166,7 @@ const AddSalesReturn = () => {
 
   // Totals Calculation
   const totals = useMemo(() => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const subtotal = formData.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
     const taxableAmount = subtotal + (parseFloat(formData.additionalCharges) || 0);
     
     let discountVal = 0;
@@ -117,8 +179,9 @@ const AddSalesReturn = () => {
     const totalBeforeRound = taxableAmount - discountVal;
     const roundedTotal = formData.autoRoundOff ? Math.round(totalBeforeRound) : totalBeforeRound;
     const roundOffDiff = (roundedTotal - totalBeforeRound).toFixed(2);
+    const totalTax = formData.items.reduce((sum, item) => sum + (parseFloat(item.tax) || 0), 0);
 
-    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff };
+    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, totalTax };
   }, [formData]);
 
   const handleSubmit = async (e) => {
@@ -343,147 +406,202 @@ const AddSalesReturn = () => {
               </div>
 
               {/* Items Section */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-[#F8FAFC] border-b border-gray-200 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                      <tr>
-                        <th className="px-4 py-4 text-left w-12">NO</th>
-                        <th className="px-4 py-4 text-left min-w-[200px]">ITEMS/ SERVICES</th>
-                        <th className="px-4 py-4 text-left w-24">HSN/ SAC</th>
-                        <th className="px-4 py-4 text-center w-20">QTY</th>
-                        <th className="px-4 py-4 text-right w-32">RATE (₹)</th>
-                        <th className="px-4 py-4 text-right w-24">TAX (%)</th>
-                        <th className="px-4 py-4 text-right w-32">AMOUNT (₹)</th>
-                        <th className="px-4 py-4 text-center w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {formData.items.map((item, index) => (
-                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-4 py-4 text-center text-xs text-gray-300 font-bold">{index + 1}</td>
-                          <td className="px-2 py-4 relative">
-                            <input 
-                              type="text" 
-                              className="w-full bg-transparent border-none outline-none text-sm font-black text-gray-800 uppercase"
-                              placeholder="Type item name..."
-                              value={item.name}
-                              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                              list={`items-list-${item.id}`}
-                            />
-                            <datalist id={`items-list-${item.id}`}>
-                                {itemsPool.map(i => (
-                                    <option key={i._id} value={i.name} />
-                                ))}
-                            </datalist>
-                          </td>
-                          <td className="px-2 py-4">
-                            <input 
-                              type="text" 
-                              className="w-full bg-transparent border-none outline-none text-xs text-center font-bold text-gray-400"
-                              placeholder="HSN"
-                              value={item.hsn}
-                              onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
-                            />
-                          </td>
-                          <td className="px-2 py-4">
-                            <div className="flex items-center justify-center gap-1 bg-white border border-gray-100 rounded-lg p-1 shadow-sm">
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col min-h-[400px]">
+                <div className="bg-white rounded-xl border-b border-gray-100 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-10">
+                   <div>
+                       <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">Return Items</h3>
+                       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Manage items being returned</p>
+                   </div>
+                   <div className="px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-black text-indigo-600 uppercase tabular-nums">{formData.items.length} Entries</span>
+                   </div>
+                </div>
+
+                <div className="flex-1 overflow-x-auto min-w-0">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full border-collapse min-w-[1200px]">
+                      <thead className="bg-gray-50/50 border-b border-gray-200 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        <tr>
+                          <th className="px-6 py-5 text-left w-12">NO</th>
+                          <th className="px-6 py-5 text-left min-w-[250px]">ITEMS / SERVICES</th>
+                          <th className="px-6 py-5 text-left w-28">HSN</th>
+                          <th className="px-6 py-5 text-right w-32">MRP (₹)</th>
+                          <th className="px-6 py-5 text-center w-28">QTY</th>
+                          <th className="px-6 py-5 text-right w-32">RATE (₹)</th>
+                          <th className="px-6 py-5 text-left w-36">GST %</th>
+                          <th className="px-6 py-5 text-right w-24">DISC %</th>
+                          <th className="px-6 py-5 text-right w-36">AMOUNT (₹)</th>
+                          <th className="px-6 py-5 text-center w-12"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {formData.items.map((item, index) => (
+                          <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
+                            <td className="px-6 py-5 text-center text-xs text-gray-300 font-bold">{index + 1}</td>
+                            <td className="px-6 py-5">
+                               <div 
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-sm font-bold text-gray-800 hover:border-indigo-400 hover:text-indigo-600 transition-all cursor-pointer flex items-center gap-2"
+                                onClick={() => {
+                                  setActiveItemIndex(index);
+                                  setShowItemPicker(true);
+                                }}
+                              >
+                                {item.name ? (
+                                    <span className="truncate uppercase tracking-tight">{item.name}</span>
+                                ) : (
+                                    <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Type Item Name...</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5">
                               <input 
+                                type="text" 
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-[10px] text-center font-bold text-gray-500 hover:border-indigo-300 outline-none transition-all uppercase"
+                                placeholder="HSN"
+                                value={item.hsn}
+                                onChange={(e) => updateItem(item.id, 'hsn', e.target.value)}
+                              />
+                            </td>
+                            <td className="px-6 py-5">
+                               <input 
                                 type="number" 
-                                className="w-10 bg-transparent border-none outline-none text-center text-xs font-black text-indigo-600"
-                                value={item.qty === 0 ? '' : item.qty}
-                                onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-right text-xs font-bold text-gray-600 hover:border-indigo-300 outline-none transition-all"
+                                value={item.mrp || ''}
+                                onChange={(e) => updateItem(item.id, 'mrp', e.target.value)}
                                 placeholder="0"
                               />
-                              <span className="text-[9px] text-gray-400 font-bold">{item.unit}</span>
-                            </div>
-                          </td>
-                          <td className="px-2 py-4 text-right">
-                             <input 
-                              type="number" 
-                              className="w-full bg-transparent border-none outline-none text-right text-sm font-black text-gray-800"
-                              value={item.rate === 0 ? '' : item.rate}
-                              onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                            />
-                          </td>
-                          <td className="px-2 py-4 text-right">
-                             <input 
-                              type="number" 
-                              className="w-full bg-transparent border-none outline-none text-right text-xs font-bold text-gray-400"
-                              value={item.tax === 0 ? '' : item.tax}
-                              onChange={(e) => updateItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
-                              placeholder="0"
-                            />
-                          </td>
-                          <td className="px-4 py-4 text-right font-black text-indigo-600 text-sm">
-                            ₹ {item.amount.toLocaleString()}
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                             <Trash2 
-                               size={16} 
-                               className="text-gray-200 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100"
-                               onClick={() => removeItem(item.id)}
-                             />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <input 
+                                  type="number" 
+                                  className="w-16 bg-transparent border-b border-gray-200 px-1 py-1.5 text-center text-sm font-black text-indigo-600 focus:border-indigo-500 outline-none"
+                                  value={item.qty === 0 ? '' : item.qty}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
+                                  placeholder="0"
+                                />
+                                <span className="text-[9px] text-gray-400 font-black uppercase">{item.unit}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                               <input 
+                                type="number" 
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-right text-sm font-black text-gray-800 hover:border-indigo-300 outline-none"
+                                value={item.rate === 0 ? '' : item.rate}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-6 py-5">
+                                <select
+                                    value={item.gstRate || 'None'}
+                                    onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                                    className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-[10px] font-black text-gray-500 hover:border-indigo-300 outline-none cursor-pointer uppercase"
+                                >
+                                    {gstOptions.map(opt => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
+                            </td>
+                            <td className="px-6 py-5 text-right">
+                               <input 
+                                type="number" 
+                                className="w-full bg-transparent border-b border-gray-200 px-2 py-1.5 text-right text-xs font-bold text-gray-400 hover:border-indigo-300 outline-none"
+                                value={item.discount === 0 ? '' : item.discount}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-6 py-5 text-right font-black text-indigo-600 text-sm">
+                              ₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                               <Trash2 
+                                 size={16} 
+                                 className="text-gray-300 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100 mx-auto"
+                                 onClick={() => removeItem(item.id)}
+                               />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile View with new fields */}
+                  <div className="md:hidden divide-y divide-gray-100">
+                    {formData.items.map((item, index) => (
+                      <div key={item.id} className="p-5 space-y-4 bg-white">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider">Item #{index + 1}</span>
+                            <button onClick={() => removeItem(item.id)} className="text-red-400 p-1 hover:bg-red-50 rounded"><Trash2 size={16}/></button>
+                        </div>
+                        
+                        <div 
+                             className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-sm font-black uppercase text-gray-800 flex items-center justify-between"
+                             onClick={() => {
+                               setActiveItemIndex(index);
+                               setShowItemPicker(true);
+                             }}
+                        >
+                            <span>{item.name || "Select Item"}</span>
+                            <Search size={16} className="text-gray-400" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="space-y-1">
+                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Qty & Unit</label>
+                             <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                                <input type="number" className="w-full bg-transparent border-none outline-none text-sm font-black text-indigo-600" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', e.target.value)} />
+                                <span className="text-[9px] font-bold text-gray-400">{item.unit}</span>
+                             </div>
+                           </div>
+                           <div className="space-y-1">
+                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Rate (₹)</label>
+                             <div className="bg-gray-50 rounded-xl px-3 py-2">
+                                <input type="number" className="w-full bg-transparent border-none outline-none text-sm font-bold text-gray-800" value={item.rate} onChange={(e) => updateItem(item.id, 'rate', e.target.value)} />
+                             </div>
+                           </div>
+                           <div className="space-y-1 col-span-2">
+                             <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">GST Rate</label>
+                             <select className="w-full bg-gray-50 rounded-xl px-3 py-2 text-xs font-bold text-gray-600 outline-none" value={item.gstRate} onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}>
+                                {gstOptions.map(opt => <option key={opt}>{opt}</option>)}
+                             </select>
+                           </div>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-3 border-t border-dashed border-gray-100">
+                          <span className="text-[10px] font-black text-gray-400 uppercase">Net Amount</span>
+                          <span className="text-base font-black text-indigo-600">₹ {item.amount.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Mobile View Items */}
-                <div className="md:hidden divide-y divide-gray-100">
-                  {formData.items.map((item, index) => (
-                    <div key={item.id} className="p-4 space-y-4 bg-white">
-                      <div className="flex justify-between items-center text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-1 rounded tracking-widest">
-                        Item #{index + 1}
-                        <button onClick={() => removeItem(item.id)} className="text-red-400"><Trash2 size={16}/></button>
-                      </div>
-                      <input 
-                        type="text" 
-                        className="w-full bg-gray-50 border border-transparent rounded-xl px-4 py-2.5 text-sm font-black uppercase focus:bg-white focus:border-indigo-100 outline-none transition-all"
-                        placeholder="Item Name"
-                        value={item.name}
-                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                        list={`items-list-mobile-${item.id}`}
-                      />
-                      <datalist id={`items-list-mobile-${item.id}`}>
-                            {itemsPool.map(i => (
-                                <option key={i._id} value={i.name} />
-                            ))}
-                      </datalist>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Qty</label>
-                          <div className="flex items-center gap-2 bg-gray-50 border border-transparent rounded-xl px-3 py-2">
-                             <input type="number" className="w-full bg-transparent border-none outline-none text-xs font-black text-indigo-600" value={item.qty} onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)} />
-                             <span className="text-[9px] font-black text-gray-400 uppercase">{item.unit}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Rate</label>
-                          <div className="flex items-center gap-1 bg-gray-50 border border-transparent rounded-xl px-3 py-2 font-black text-xs">
-                             <span className="text-gray-300">₹</span>
-                             <input type="number" className="w-full bg-transparent border-none outline-none" value={item.rate} onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center pt-3 border-t border-dashed border-gray-100">
-                        <span className="text-[10px] font-black text-gray-400 uppercase">Amount</span>
-                        <span className="text-base font-black text-indigo-600">₹ {item.amount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {/* Empty State */}
+                {formData.items.length === 0 && (
+                     <div className="text-center py-12">
+                         <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                             <ShoppingCart size={32} className="text-slate-300" />
+                         </div>
+                         <h3 className="text-slate-500 font-medium">No items added</h3>
+                         <p className="text-slate-400 text-sm">Add items to proceed with return</p>
+                     </div>
+                )}
 
-                <div className="p-4 flex flex-col sm:flex-row justify-between items-center bg-gray-50/50 border-t border-gray-100 gap-4">
+                <div className="p-4 border-t border-gray-100 bg-gray-50/30">
                   <div 
-                    className="w-full sm:w-auto h-12 flex items-center justify-center gap-3 px-8 border-2 border-dashed border-indigo-200 rounded-xl hover:bg-white transition-all cursor-pointer group flex-1 max-w-lg"
+                    className="w-full h-12 flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg hover:bg-white hover:border-indigo-400 transition-all cursor-pointer group"
                     onClick={addItem}
                   >
-                    <Plus size={20} className="text-indigo-500 group-hover:scale-125 transition-transform" />
-                    <span className="text-sm font-black text-indigo-600 uppercase tracking-[2px]">Add Item</span>
+                    <Plus size={20} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                    <span className="text-sm font-black text-gray-500 group-hover:text-indigo-600 uppercase tracking-widest">Add Return Item</span>
                   </div>
                 </div>
               </div>
@@ -549,34 +667,83 @@ const AddSalesReturn = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-6 shadow-sm">
+              <div className="bg-white rounded-3xl border border-gray-200 p-6 space-y-6 shadow-sm">
                 <div className="space-y-4">
-                   <div className="flex justify-between items-center">
+                   {/* Subtotal */}
+                   <div className="flex justify-between items-center group">
                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
                      <span className="text-sm font-black text-gray-800">₹ {totals.subtotal.toLocaleString()}</span>
                    </div>
-                   <div className="flex justify-between items-center group gap-2">
-                     <button className="text-[10px] font-black text-indigo-500 uppercase">+ Charges</button>
-                     <input type="number" className="w-20 text-right bg-transparent border-none text-sm font-black outline-none" value={formData.additionalCharges} onChange={e => setFormData({...formData, additionalCharges: parseFloat(e.target.value) || 0})} />
+                   
+                   {/* Additional Charges */}
+                   <div className="flex justify-between items-center group gap-2 py-2 border-t border-gray-50">
+                     <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-gray-500 uppercase flex items-center gap-1">
+                            Additional Charges
+                        </span>
+                     </div>
+                     <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100 focus-within:border-indigo-200 transition-all">
+                        <span className="text-[10px] font-bold text-gray-400">₹</span>
+                        <input 
+                            type="number" 
+                            className="w-16 text-right bg-transparent border-none outline-none text-xs font-black text-gray-700" 
+                            value={formData.additionalCharges || ''} 
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => setFormData({...formData, additionalCharges: e.target.value})}
+                            placeholder="0"
+                        />
+                     </div>
                    </div>
-                   <div className="flex justify-between items-center group gap-2">
-                     <button className="text-[10px] font-black text-indigo-500 uppercase">+ Discount</button>
-                     <span className="text-sm font-black text-red-500">- ₹ {totals.discountVal.toLocaleString()}</span>
+
+                   {/* Overall Discount */}
+                   <div className="flex justify-between items-center py-2 border-t border-gray-50">
+                     <span className="text-[10px] font-black text-gray-500 uppercase">Discount</span>
+                     
+                     <div className="flex items-center bg-indigo-50/50 rounded-lg border border-indigo-100/50 focus-within:border-indigo-200 transition-all p-1">
+                        <select 
+                            value={formData.overallDiscountType}
+                            onChange={(e) => setFormData({...formData, overallDiscountType: e.target.value})}
+                            className="text-[9px] bg-transparent text-indigo-600 border-none font-bold outline-none cursor-pointer pr-1"
+                        >
+                            <option value="percentage">%</option>
+                            <option value="fixed">₹</option>
+                        </select>
+                        <div className="w-px h-3 bg-indigo-200 mx-1"></div>
+                        <input 
+                            type="number" 
+                            className="w-16 text-right bg-transparent border-none outline-none text-xs font-black text-indigo-600" 
+                            value={formData.overallDiscount || ''} 
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => setFormData({...formData, overallDiscount: e.target.value})}
+                            placeholder="0"
+                        />
+                     </div>
                    </div>
                 </div>
-                
-                <div className="pt-4 border-t border-gray-50">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <input type="checkbox" checked={formData.autoRoundOff} onChange={e => setFormData({...formData, autoRoundOff: e.target.checked})} className="w-4 h-4 rounded text-indigo-600" />
-                            <span className="text-[10px] font-black text-gray-400 uppercase">Round Off</span>
-                        </div>
-                        <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded tracking-tighter cursor-pointer">₹ {totals.roundOffDiff}</span>
-                    </div>
-                    <div className="bg-indigo-600 p-4 rounded-2xl text-white shadow-xl shadow-indigo-100">
-                        <div className="text-[9px] font-black uppercase opacity-60 tracking-[3px] mb-1">Return Total</div>
-                        <div className="text-3xl font-black tracking-tight">₹ {totals.roundedTotal.toLocaleString()}</div>
-                    </div>
+
+                <div className="pt-4 border-t border-gray-100 space-y-4">
+                   <div className="bg-black p-5 rounded-3xl text-white shadow-2xl shadow-black/20 transform hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center">
+                       <div className="text-[10px] font-bold text-gray-500 uppercase tracking-[4px] mb-1">Total Return</div>
+                       <div className="text-3xl font-black tracking-tight">₹ {totals.roundedTotal.toLocaleString()}</div>
+                   </div>
+
+                   <div className="space-y-4 pt-2">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <input 
+                                type="checkbox" 
+                                id="autoRoundOff"
+                                checked={formData.autoRoundOff}
+                                onChange={(e) => setFormData({...formData, autoRoundOff: e.target.checked})}
+                                className="w-4 h-4 rounded text-black border-gray-300 focus:ring-0 cursor-pointer" 
+                           />
+                           <label htmlFor="autoRoundOff" className="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer">Round Off</label>
+                         </div>
+                         {formData.autoRoundOff && (
+                            <span className="text-[10px] font-bold text-gray-400">{totals.roundOffDiff}</span>
+                         )}
+                      </div>
+                   </div>
                 </div>
               </div>
 
@@ -584,6 +751,98 @@ const AddSalesReturn = () => {
           </div>
         </div>
       </div>
+      
+      {/* Item Picker Modal */}
+      {showItemPicker && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div 
+                  className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]"
+                  onClick={(e) => e.stopPropagation()}
+              >
+                  {/* Modal Header */}
+                  <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                      <div>
+                          <h3 className="text-xl font-black text-gray-900 tracking-tight">Select Product</h3>
+                          <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Search and select item to add to return</p>
+                      </div>
+                      <button 
+                          onClick={() => setShowItemPicker(false)}
+                          className="p-2 hover:bg-white hover:shadow-md rounded-xl text-gray-400 hover:text-red-500 transition-all"
+                      >
+                          <X size={20} />
+                      </button>
+                  </div>
+
+                  {/* Search */}
+                  <div className="p-6 pb-2">
+                      <div className="relative group/search">
+                          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within/search:text-indigo-500 transition-colors" />
+                          <input 
+                              type="text" 
+                              className="w-full pl-12 pr-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition-all"
+                              placeholder="Search item by name, code or HSN..."
+                              autoFocus
+                              value={pickerSearchTerm}
+                              onChange={(e) => setPickerSearchTerm(e.target.value)}
+                          />
+                      </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
+                      <div className="grid grid-cols-1 gap-2">
+                          {itemsPool.filter(item => 
+                              !pickerSearchTerm || 
+                              item.name.toLowerCase().includes(pickerSearchTerm.toLowerCase()) ||
+                              (item.code && item.code.toLowerCase().includes(pickerSearchTerm.toLowerCase()))
+                          ).map((item) => (
+                              <div 
+                                  key={item._id}
+                                  className="group p-4 rounded-2xl border border-transparent hover:border-indigo-100 hover:bg-indigo-50/30 cursor-pointer transition-all flex items-center justify-between"
+                                  onClick={() => selectItem(item)}
+                              >
+                                  <div className="flex items-center gap-4">
+                                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center font-black text-gray-400 group-hover:bg-white group-hover:text-indigo-600 group-hover:shadow-sm transition-all text-xs uppercase">
+                                          {item.name.substring(0, 2)}
+                                      </div>
+                                      <div>
+                                          <div className="font-black text-gray-900 group-hover:text-indigo-700">{item.name}</div>
+                                          <div className="flex items-center gap-2 mt-1">
+                                              {item.code && <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-500 font-bold uppercase">{item.code}</span>}
+                                              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Stock: {item.stock || 0} {item.unit}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                                  <div className="text-right">
+                                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Selling Price</div>
+                                      <div className="font-black text-gray-900 group-hover:text-indigo-600">₹ {item.sellingPrice?.toLocaleString() || 0}</div>
+                                  </div>
+                              </div>
+                          ))}
+                          
+                          {itemsPool.length === 0 && (
+                              <div className="py-12 text-center text-gray-400">
+                                  <p className="text-sm font-bold">No items found</p>
+                              </div>
+                          )}
+                      </div>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                           {itemsPool.filter(i => !pickerSearchTerm || i.name.toLowerCase().includes(pickerSearchTerm.toLowerCase())).length} Items Found
+                       </span>
+                       <button 
+                          className="px-6 py-2 bg-black text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors"
+                          onClick={() => navigate('/inventory')}
+                       >
+                           + Add New Product
+                       </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </DashboardLayout>
   );
 };
