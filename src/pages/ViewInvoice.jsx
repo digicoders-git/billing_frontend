@@ -259,7 +259,7 @@ const ViewInvoice = () => {
                       <td className="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase">{item.unit || 'PCS'}</td>
                       <td className="px-6 py-4 text-right text-sm font-medium">₹{(item.rate || 0).toLocaleString('en-IN')}</td>
                       <td className="px-6 py-4 text-right text-xs text-blue-600 font-bold">{item.discount || 0}%</td>
-                      <td className="px-6 py-4 text-right text-xs text-orange-600 font-bold">{item.tax || 0}%</td>
+                      <td className="px-6 py-4 text-right text-xs text-orange-600 font-bold">{item.gstRate || item.tax || 0}%</td>
                       <td className="px-6 py-4 text-right text-sm font-black text-gray-900">₹{(item.amount || 0).toLocaleString('en-IN')}</td>
                     </tr>
                   ))}
@@ -321,7 +321,7 @@ const ViewInvoice = () => {
                     <span className="font-bold text-green-600">+₹{(invoice.additionalCharges || 0).toLocaleString('en-IN')}</span>
                   </div>
                 )}
-                {invoice.gstEnabled && (
+                {(invoice.gstEnabled || (invoice.gstAmount > 0)) && (
                   <>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-500 font-medium">Taxable Amount:</span>

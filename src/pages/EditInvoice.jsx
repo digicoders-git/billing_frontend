@@ -16,6 +16,13 @@ const EditInvoice = () => {
   const [loading, setLoading] = useState(true);
   const [parties, setParties] = useState([]);
   
+  const gstOptions = [
+    "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
+    "GST @ 3%", "GST @ 5%", "GST @ 6%", "GST @ 8.9%", "GST @ 12%", "GST @ 13.8%",
+    "GST @ 18%", "GST @ 14% + cess @ 12%", "GST @ 28%", "GST @ 28% + Cess @ 5%",
+    "GST @ 40%", "GST @ 28% + Cess @ 36%", "GST @ 60%"
+  ];
+  
   const [formData, setFormData] = useState({
     invoiceNo: '',
     date: '',
@@ -125,9 +132,28 @@ const EditInvoice = () => {
       const newItems = prev.items.map(item => {
         if (item.id === id) {
           const updatedItem = { ...item, [field]: value };
-          const baseAmount = (updatedItem.qty || 0) * (updatedItem.rate || 0);
-          const discAmount = (baseAmount * (updatedItem.discount || 0)) / 100;
-          updatedItem.amount = baseAmount - discAmount;
+          
+          // Auto Update Amount with GST logic
+          const qty = parseFloat(updatedItem.qty) || 0;
+          const rate = parseFloat(updatedItem.rate) || 0;
+          const discPercent = parseFloat(updatedItem.discount) || 0;
+          const gstStr = updatedItem.gstRate || 'None';
+          
+          let gstPercent = 0;
+          if (typeof gstStr === 'string' && gstStr.includes('@')) {
+            gstPercent = parseFloat(gstStr.split('@')[1]) || 0;
+          } else if (typeof gstStr === 'number') {
+            gstPercent = gstStr;
+          }
+
+          const baseAmount = qty * rate;
+          const discAmount = (baseAmount * discPercent) / 100;
+          const taxableAmount = baseAmount - discAmount;
+          
+          const gstAmount = (taxableAmount * gstPercent) / 100;
+          updatedItem.gstAmount = gstAmount;
+          updatedItem.amount = taxableAmount + gstAmount;
+          
           return updatedItem;
         }
         return item;
@@ -150,22 +176,79 @@ const EditInvoice = () => {
   };
 
   const totals = useMemo(() => {
-    const subtotal = formData.items.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const taxableAmount = subtotal + (parseFloat(formData.additionalCharges) || 0);
+    // Calculate item-wise totals
+    const itemTotals = formData.items.reduce((acc, item) => {
+        const qty = parseFloat(item.qty) || 0;
+        const rate = parseFloat(item.rate) || 0;
+        const discPercent = parseFloat(item.discount) || 0;
+        
+        const baseAmount = qty * rate;
+        const discAmount = (baseAmount * discPercent) / 100;
+        const taxableAmount = baseAmount - discAmount;
+        
+        const gstStr = item.gstRate || 'None';
+        let gstPercent = 0;
+        if (typeof gstStr === 'string' && gstStr.includes('@')) {
+          gstPercent = parseFloat(gstStr.split('@')[1]) || 0;
+        } else if (typeof gstStr === 'number') {
+          gstPercent = gstStr;
+        }
+        const gstAmount = (taxableAmount * gstPercent) / 100;
+        
+        return {
+            baseAmount: acc.baseAmount + baseAmount,
+            itemDiscount: acc.itemDiscount + discAmount,
+            taxableAmount: acc.taxableAmount + taxableAmount,
+            gstAmount: acc.gstAmount + gstAmount,
+            total: acc.total + (taxableAmount + gstAmount)
+        };
+    }, { baseAmount: 0, itemDiscount: 0, taxableAmount: 0, gstAmount: 0, total: 0 });
+
+    const subtotal = itemTotals.taxableAmount;
     
-    let discountVal = 0;
+    let overallDiscountVal = 0;
     if (formData.overallDiscountType === 'percentage') {
-      discountVal = (taxableAmount * (parseFloat(formData.overallDiscount) || 0)) / 100;
+        overallDiscountVal = (subtotal * (parseFloat(formData.overallDiscount) || 0)) / 100;
     } else {
-      discountVal = parseFloat(formData.overallDiscount) || 0;
+        overallDiscountVal = parseFloat(formData.overallDiscount) || 0;
     }
 
-    const totalBeforeRound = taxableAmount - discountVal;
+    const taxableAfterDiscount = subtotal - overallDiscountVal;
+    
+    let finalGstAmount = itemTotals.gstAmount;
+    if (overallDiscountVal > 0 && subtotal > 0) {
+        const discountRatio = taxableAfterDiscount / subtotal;
+        finalGstAmount = itemTotals.gstAmount * discountRatio;
+    }
+    
+    const withCharges = taxableAfterDiscount + finalGstAmount + (parseFloat(formData.additionalCharges) || 0);
+
+    // GST Split Logic
+    const companyState = 'Uttar Pradesh'; // Fallback
+    const partyState = formData.party?.placeOfSupply || formData.stateOfSupply || '';
+    
+    let cgst = 0, sgst = 0, igst = 0;
+    if (partyState && partyState.toLowerCase() === companyState.toLowerCase()) {
+        cgst = finalGstAmount / 2;
+        sgst = finalGstAmount / 2;
+    } else {
+        igst = finalGstAmount;
+    }
+
+    const totalBeforeRound = withCharges;
     const roundedTotal = formData.autoRoundOff ? Math.round(totalBeforeRound) : totalBeforeRound;
     const roundOffDiff = (roundedTotal - totalBeforeRound).toFixed(2);
     const balance = roundedTotal - (parseFloat(formData.amountReceived) || 0);
 
-    return { subtotal, taxableAmount, discountVal, roundedTotal, roundOffDiff, balance };
+    return { 
+        subtotal: itemTotals.baseAmount,
+        itemDiscount: itemTotals.itemDiscount,
+        taxableAmount: taxableAfterDiscount,
+        discountVal: overallDiscountVal,
+        gstAmount: finalGstAmount,
+        cgst, sgst, igst,
+        roundedTotal, roundOffDiff, balance 
+    };
   }, [formData]);
 
   const handleSubmit = async (e) => {
@@ -191,22 +274,39 @@ const EditInvoice = () => {
         gstRate: parseFloat(formData.gstRate) || 0,
         taxType: formData.taxType,
         
-        items: formData.items.map(item => ({
-          itemId: item.itemId,
-          name: item.name,
-          hsn: item.hsn,
-          qty: parseFloat(item.qty),
-          unit: item.unit,
-          rate: parseFloat(item.rate),
-          discount: parseFloat(item.discount),
-          tax: parseFloat(item.tax || 0),
-          amount: parseFloat(item.amount)
-        })),
+        items: formData.items.map(item => {
+          const gstStr = item.gstRate || 'None';
+          let numericGst = 0;
+          if (typeof gstStr === 'string' && gstStr.includes('@')) {
+            numericGst = parseFloat(gstStr.split('@')[1]) || 0;
+          } else if (typeof gstStr === 'number') {
+            numericGst = gstStr;
+          }
+
+          return {
+            itemId: item.itemId,
+            name: item.name,
+            hsn: item.hsn,
+            qty: parseFloat(item.qty),
+            unit: item.unit,
+            rate: parseFloat(item.rate),
+            discount: parseFloat(item.discount),
+            gstRate: numericGst,
+            gstAmount: parseFloat(item.gstAmount || 0),
+            tax: numericGst, // mapping both for compatibility
+            amount: parseFloat(item.amount)
+          };
+        }),
         
         subtotal: totals.subtotal,
         taxableAmount: totals.taxableAmount,
+        gstAmount: totals.gstAmount,
+        cgst: totals.cgst,
+        sgst: totals.sgst,
+        igst: totals.igst,
         totalAmount: totals.roundedTotal,
         roundOffDiff: parseFloat(totals.roundOffDiff),
+        gstEnabled: totals.gstAmount > 0,
         
         additionalCharges: parseFloat(formData.additionalCharges) || 0,
         overallDiscount: parseFloat(formData.overallDiscount) || 0,
@@ -309,6 +409,7 @@ const EditInvoice = () => {
                         <th className="px-4 py-3 text-center w-24">QTY</th>
                         <th className="px-4 py-3 text-right w-32">Rate (₹)</th>
                         <th className="px-4 py-3 text-right w-24">Disc (%)</th>
+                        <th className="px-4 py-3 text-center w-32">GST</th>
                         <th className="px-4 py-3 text-right w-32">Amount (₹)</th>
                         <th className="px-4 py-3 text-center w-10"></th>
                       </tr>
@@ -334,6 +435,15 @@ const EditInvoice = () => {
                           </td>
                           <td className="px-2 py-3 text-right">
                              <input type="number" className="w-full bg-transparent border-none outline-none text-right text-xs text-gray-400" value={item.discount} onChange={(e) => updateItem(item.id, 'discount', parseFloat(e.target.value) || 0)} />
+                          </td>
+                          <td className="px-2 py-3 text-center">
+                            <select 
+                              className="bg-transparent border-none outline-none text-[10px] font-bold text-orange-600 w-full text-center"
+                              value={item.gstRate || 'None'} 
+                              onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)}
+                            >
+                              {gstOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            </select>
                           </td>
                           <td className="px-4 py-3 text-right font-black text-gray-900">₹ {item.amount.toLocaleString()}</td>
                           <td className="px-2 py-3 text-center">
@@ -439,6 +549,37 @@ const EditInvoice = () => {
                     <span>Subtotal</span>
                     <span className="text-gray-700">₹ {totals.subtotal.toLocaleString()}</span>
                   </div>
+                  {totals.discountVal > 0 && (
+                     <div className="flex justify-between items-center text-xs font-bold text-red-500 uppercase">
+                        <span>Discount</span>
+                        <span>- ₹ {totals.discountVal.toLocaleString()}</span>
+                     </div>
+                  )}
+                  {totals.gstAmount > 0 && (
+                    <>
+                      <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase">
+                        <span>Taxable Amount</span>
+                        <span className="text-gray-700">₹ {totals.taxableAmount.toLocaleString()}</span>
+                      </div>
+                      {totals.igst > 0 ? (
+                        <div className="flex justify-between items-center text-xs font-bold text-blue-600 uppercase">
+                          <span>IGST</span>
+                          <span>+ ₹ {totals.igst.toLocaleString()}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-center text-xs font-bold text-green-600 uppercase">
+                            <span>CGST</span>
+                            <span>+ ₹ {totals.cgst.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs font-bold text-green-600 uppercase">
+                            <span>SGST</span>
+                            <span>+ ₹ {totals.sgst.toLocaleString()}</span>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">

@@ -127,15 +127,15 @@ const InvoicePDF = () => {
     const roundedTotal = invoiceData.totalAmount || 0;
     const balance = invoiceData.balanceAmount || 0;
 
-    // Company Info - Hardcoded to match provided invoice image
+    // Company Info - Dynamic from User Profile
     const company = {
-        name: 'FAIZAN MACHINERY & AQUA CULTURE',
-        address: 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192',
-        gstin: '09DWAPK9067Q1ZJ',
-        mobile: '9839280238',
-        pan: 'DWAPK9069Q', 
-        email: 'fmaaquaculture@gmail.com',
-        website: 'www.faizanaquaculture.in'
+        name: userProfile?.businessName || 'FAIZAN MACHINERY & AQUA CULTURE',
+        address: userProfile?.address || 'BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192',
+        gstin: userProfile?.gstin || '09DWAPK9067Q1ZJ',
+        mobile: userProfile?.phone || '9839280238',
+        pan: userProfile?.pan || 'DWAPK9069Q', 
+        email: userProfile?.email || 'fmaaquaculture@gmail.com',
+        website: userProfile?.website || 'www.faizanaquaculture.in'
     };
 
     // Prepare data for display
@@ -160,8 +160,10 @@ const InvoicePDF = () => {
             hsn: it.hsn || '-',
             qty: it.qty,
             unit: it.unit || 'PCS',
-            mrp: it.rate, // Default to rate if MRP not stored
+            mrp: it.mrp || it.rate,
             rate: it.rate,
+            gstRate: it.gstRate || 0,
+            gstAmount: it.gstAmount || 0,
             amount: it.amount
         })),
         roundOff: roundOffDiff,
@@ -267,6 +269,7 @@ const InvoicePDF = () => {
                                         <th className="border-r border-black px-2 py-1 w-20">HSN</th>
                                         <th className="border-r border-black px-2 py-1 w-16">QTY.</th>
                                         <th className="border-r border-black px-2 py-1 w-20 text-right">RATE</th>
+                                        <th className="border-r border-black px-2 py-1 w-16 text-center">GST %</th>
                                         <th className="px-2 py-1 w-24 text-right">AMOUNT</th>
                                     </tr>
                                 </thead>
@@ -278,12 +281,14 @@ const InvoicePDF = () => {
                                             <td className="border-r border-black px-2 py-1.5 text-center font-medium">{item.hsn}</td>
                                             <td className="border-r border-black px-2 py-1.5 text-center font-bold">{item.qty} {item.unit}</td>
                                             <td className="border-r border-black px-2 py-1.5 text-right font-medium">{item.rate.toLocaleString()}</td>
+                                            <td className="border-r border-black px-2 py-1.5 text-center font-medium">{item.gstRate}%</td>
                                             <td className="px-2 py-1.5 text-right font-black">{item.amount.toLocaleString()}</td>
                                         </tr>
                                     ))}
                                     {/* Empty rows to maintain height */}
                                     {[...Array(Math.max(0, 8 - displayInvoice.items.length))].map((_, i) => (
                                         <tr key={`empty-${i}`} className="h-6 border-b border-gray-50">
+                                            <td className="border-r border-black"/>
                                             <td className="border-r border-black"/>
                                             <td className="border-r border-black"/>
                                             <td className="border-r border-black"/>
@@ -301,8 +306,8 @@ const InvoicePDF = () => {
                                     Computer Generated Invoice. No Signature Required.
                                 </div>
                                 <div className="w-[40%] flex flex-col font-bold text-[10px]">
-                                    {/* Show GST Breakdown if GST is enabled */}
-                                    {invoiceData.gstEnabled && (
+                                    {/* Show GST Breakdown if GST is present */}
+                                    {(invoiceData.gstEnabled || (invoiceData.gstAmount > 0)) && (
                                         <>
                                             <div className="flex justify-between px-3 py-1 border-b border-gray-200 bg-gray-50/30">
                                                 <span className="italic font-medium text-gray-600">Taxable Amount</span>

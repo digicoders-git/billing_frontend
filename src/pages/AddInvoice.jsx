@@ -337,6 +337,16 @@ const AddInvoice = () => {
             totalAmount: totals.roundedTotal,
             roundOffDiff: parseFloat(totals.roundOffDiff),
             
+            gstEnabled: totals.gstAmount > 0,
+            gstRate: (() => {
+                // If there's GST, we can use the max rate among items or default
+                const maxRate = Math.max(...formData.items.map(it => {
+                    const rateStr = it.gstRate || 'None';
+                    return rateStr.includes('@') ? (parseFloat(rateStr.split('@')[1]) || 0) : 0;
+                }));
+                return maxRate;
+            })(),
+            
             // Payment Info
             additionalCharges: parseFloat(formData.additionalCharges) || 0,
             overallDiscount: parseFloat(formData.overallDiscount) || 0,
