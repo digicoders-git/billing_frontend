@@ -330,7 +330,7 @@ const PurchaseOrders = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                                <div className="flex items-center justify-end gap-1 opacity-100 transition-all">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/purchases/order/edit/${order._id}`); }}
                                                         className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"

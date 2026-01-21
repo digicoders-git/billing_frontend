@@ -420,7 +420,7 @@ const Godown = () => {
                               </td>
                               <td className="px-6 py-4 text-right font-bold text-sm text-gray-900 italic tabular-nums">₹{value.toLocaleString()}</td>
                               <td className="px-6 py-4">
-                                  <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                  <div className="flex items-center justify-end gap-2 opacity-100 transition-all">
                                       <button 
                                           onClick={() => {
                                               Swal.fire({
@@ -465,7 +465,21 @@ const Godown = () => {
                   const value = stock * price;
                   
                   return (
-                  <div key={item._id} className="p-4 active:bg-gray-50 transition-colors">
+                  <div key={item._id} className="p-4 active:bg-gray-50 transition-colors cursor-pointer" onClick={() => {
+                      Swal.fire({
+                          title: item.name,
+                          html: `
+                              <div class="text-left space-y-2 p-4">
+                                  <p><b>SKU:</b> ${item.code || 'N/A'}</p>
+                                  <p><b>Current Stock:</b> ${stock} ${item.unit || 'PCS'}</p>
+                                  <p><b>Purchase Price:</b> ₹${price}</p>
+                                  <p><b>Selling Price:</b> ₹${item.sellingPrice || 0}</p>
+                                  <p><b>Total Valuation:</b> ₹${value.toLocaleString()}</p>
+                              </div>
+                          `,
+                          confirmButtonColor: '#000'
+                      });
+                  }}>
                       <div className="flex justify-between items-start mb-2">
                           <div className="flex-1 min-w-0 mr-4">
                               <h3 className="font-bold text-gray-900 text-sm truncate">{item.name}</h3>

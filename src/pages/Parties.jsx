@@ -362,7 +362,7 @@ const Parties = () => {
                               ₹ {party.openingBalance ? party.openingBalance.toLocaleString() : '0'}
                           </td>
                           <td className="px-6 py-4">
-                              <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
                                   {canView && (
                                     <button onClick={() => navigate(`/view-party/${party._id}`)} className="p-1.5 text-gray-400 hover:text-black transition-colors" title="View Details"><Eye size={16} /></button>
                                   )}

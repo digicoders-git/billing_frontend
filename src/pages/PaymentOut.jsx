@@ -283,7 +283,7 @@ const PaymentOut = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-center whitespace-nowrap">
-                                                <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-center gap-2 opacity-100 transition-opacity">
                                                     <button 
                                                         onClick={() => navigate(`/purchases/view-payment-out/${payment._id}`)}
                                                         className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"

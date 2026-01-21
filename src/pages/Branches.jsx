@@ -311,7 +311,7 @@ const Branches = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                                <div className="flex items-center justify-end gap-2 opacity-100 transition-all translate-x-0">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/branches/view/${branch._id}`); }}
                                                         className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100 rounded-[12px] shadow-sm transition-all active:scale-90"

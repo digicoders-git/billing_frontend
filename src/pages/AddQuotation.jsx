@@ -472,7 +472,7 @@ const AddQuotation = () => {
                           <td className="px-6 py-5 text-center">
                              <Trash2 
                                size={16} 
-                               className="text-gray-200 hover:text-red-500 cursor-pointer transition-colors opacity-0 group-hover:opacity-100 mx-auto"
+                               className="text-gray-200 hover:text-red-500 cursor-pointer transition-colors opacity-100 mx-auto"
                                onClick={() => removeItem(item.id)}
                              />
                           </td>

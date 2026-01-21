@@ -199,7 +199,7 @@ const Profile = () => {
               {/* Personal Details Tab */}
               {activeTab === 'personal' && (
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-4 border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-bold text-gray-900">Personal Information</h2>
                     <button
                       type="submit"
@@ -268,7 +268,7 @@ const Profile = () => {
               {/* Business Info Tab */}
               {activeTab === 'business' && (
                 <form onSubmit={handleUpdateProfile} className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-4 border-b border-gray-100 pb-4">
                     <h2 className="text-xl font-bold text-gray-900">Business Information</h2>
                     <button
                       type="submit"
@@ -333,7 +333,7 @@ const Profile = () => {
               {/* Security Tab - Change Password */}
               {activeTab === 'security' && (
                 <form onSubmit={handleChangePassword} className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center items-start justify-between gap-4 border-b border-gray-100 pb-4">
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">Change Password</h2>
                       <p className="text-sm text-gray-500 mt-1">Update your password to keep your account secure</p>

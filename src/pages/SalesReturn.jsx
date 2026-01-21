@@ -233,7 +233,7 @@ const SalesReturn = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5">
-                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-2 opacity-100 transition-opacity">
                                                     <button 
                                                         onClick={() => navigate(`/sales/return/view/${r.id}`)} 
                                                         className="p-2.5 text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-xl transition-all" 

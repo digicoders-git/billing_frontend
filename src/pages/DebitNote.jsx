@@ -309,7 +309,7 @@ const DebitNote = () => {
                                                 </span>
                                             </td>
                                             <td className="px-10 py-8 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                                                <div className="flex items-center justify-end gap-2 opacity-100 transition-all translate-x-0">
                                                     <button 
                                                         onClick={(e) => {
                                                             e.stopPropagation();

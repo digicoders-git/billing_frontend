@@ -434,7 +434,7 @@ const Reports = () => {
             </div>
 
             {/* Date Picker Section */}
-            <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-2xl border border-gray-100 shrink-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-3 bg-gray-50 p-2 rounded-2xl border border-gray-100 shrink-0">
                 <div className="flex flex-col">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-2">From</label>
                     <input 
