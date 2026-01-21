@@ -81,56 +81,66 @@ const ViewPurchaseOrder = () => {
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50/50 pb-20 no-print">
           {/* Top Header */}
-          <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={() => navigate(-1)} 
-                className="group flex items-center justify-center w-12 h-12 bg-white border border-gray-200 rounded-[20px] shadow-sm hover:border-gray-300 hover:shadow-md transition-all text-gray-500 hover:text-gray-800"
-              >
-                <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
-              </button>
-              <div>
-                <div className="flex items-center gap-4">
-                   <h1 className="text-3xl font-black text-gray-900 tracking-tight uppercase italic underline decoration-indigo-500/20 underline-offset-8 decoration-4">View Order</h1>
-                   <span className={cn(
-                        "px-3.5 py-1 rounded-[10px] text-[10px] font-black uppercase tracking-[2px] border shadow-sm",
-                        orderData.status === 'Delivered' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                        orderData.status === 'Approved' ? "bg-indigo-50 text-indigo-600 border-indigo-100" :
-                        "bg-amber-50 text-amber-600 border-amber-100"
-                   )}>
-                      {orderData.status}
-                   </span>
+          {/* Top Header */}
+          <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => navigate(-1)} 
+                  className="p-2 bg-white border border-gray-200 rounded-full hover:bg-gray-50 text-gray-500 transition-all shadow-sm"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-3">
+                     Purchase Order <span className="text-gray-400">#{orderData.orderNo}</span>
+                  </h1>
+                  <div className="flex items-center gap-3 mt-1.5">
+                     <span className={cn(
+                          "px-2.5 py-0.5 rounded-full text-xs font-semibold border flex items-center gap-1.5",
+                          orderData.status === 'Delivered' ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                          orderData.status === 'Approved' ? "bg-indigo-50 text-indigo-700 border-indigo-100" :
+                          "bg-amber-50 text-amber-700 border-amber-100"
+                     )}>
+                        <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            orderData.status === 'Delivered' ? "bg-emerald-500" :
+                            orderData.status === 'Approved' ? "bg-indigo-500" :
+                            "bg-amber-500"
+                        )} />
+                        {orderData.status}
+                     </span>
+                     <span className="text-sm font-medium text-gray-500 flex items-center gap-1.5">
+                        <Calendar size={14} className="text-gray-400" />
+                        {new Date(orderData.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                     </span>
+                  </div>
                 </div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-4 flex items-center gap-3">
-                    REGISTRY REF: <span className="text-indigo-600 italic">#{orderData.orderNo}</span>
-                </p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3 bg-white p-2 rounded-[24px] border border-gray-100 shadow-xl shadow-gray-200/50 w-full sm:w-auto justify-end sm:justify-start">
-               <button 
-                onClick={() => navigate(`/purchases/order/edit/${id}`)}
-                className="p-3 sm:px-5 sm:py-3 text-gray-600 hover:bg-gray-50 rounded-[18px] transition-all flex items-center gap-3 font-black uppercase text-[10px] tracking-[2px] group"
-              >
-                <Edit size={18} className="text-gray-300 group-hover:text-indigo-600 transition-colors" />
-                <span className="hidden sm:inline">Modify Entry</span>
-              </button>
-              <div className="w-px h-6 bg-gray-100"></div>
-              <button 
-                onClick={handleDelete}
-                className="p-3 sm:px-5 sm:py-3 text-rose-500 hover:bg-rose-50 rounded-[18px] transition-all flex items-center gap-3 font-black uppercase text-[10px] tracking-[2px] group"
-              >
-                <Trash2 size={18} className="text-rose-200 group-hover:text-rose-500 transition-colors" />
-                <span className="hidden sm:inline">Purge</span>
-              </button>
-              <div className="w-px h-6 bg-gray-100"></div>
-              <button 
-                onClick={() => handlePrint()} 
-                className="px-8 py-3.5 bg-gray-900 text-white rounded-[18px] text-[10px] font-black hover:bg-indigo-600 transition-all uppercase tracking-[2px] shadow-2xl shadow-indigo-100/20 flex items-center gap-3 active:scale-95 group"
-              >
-                  <Printer size={18} className="group-hover:rotate-12 transition-transform" /> 
-                  <span>Print Audit</span>
-              </button>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                 <button 
+                  onClick={handleDelete}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-sm font-medium"
+                >
+                  <Trash2 size={16} />
+                  <span className="sm:inline">Delete</span>
+                </button>
+                <button 
+                  onClick={() => navigate(`/purchases/order/edit/${id}`)}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors text-sm font-medium bg-white"
+                >
+                  <Edit size={16} />
+                  <span className="sm:inline">Edit</span>
+                </button>
+                <button 
+                  onClick={() => handlePrint()} 
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-gray-900 text-white hover:bg-gray-800 rounded-lg shadow-lg shadow-gray-200 transition-all text-sm font-medium active:scale-95"
+                >
+                  <Printer size={16} />
+                  <span className="sm:inline">Print</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -235,8 +245,64 @@ const ViewPurchaseOrder = () => {
                      </div>
                  </div>
 
+                 {/* Line Items Mobile View */}
+                 <div className="md:hidden print:hidden space-y-4 p-4">
+                     {orderData.items.map((item, index) => (
+                        <div key={index} className="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                            </div>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900">
+                                {item.name}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.hsn || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.mrp || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600 min-h-[34px] flex items-center">
+                                        {item.qty} {item.unit || 'PCS'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Rate</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        ₹{item.rate ? item.rate.toLocaleString() : '0'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.gstRate || item.tax || 'None'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.discount || 0}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                        </div>
+                     ))}
+                 </div>
+
                  {/* Line Items Table View */}
-                 <div className="flex-1">
+                 <div className="hidden md:block print:block flex-1">
                      <table className="w-full text-left">
                          <thead>
                              <tr className="bg-[#FDFDFF] text-[10px] font-black text-gray-400 uppercase tracking-[3px] border-b border-gray-100 italic">
@@ -275,46 +341,48 @@ const ViewPurchaseOrder = () => {
                  </div>
 
                  {/* Totals & Meta (Registry Footer) */}
-                 <div className="p-10 bg-gray-50 border-t border-gray-100 mt-auto">
-                     <div className="flex flex-col md:flex-row justify-between items-end gap-12">
-                         <div className="flex-1 flex flex-col justify-end items-start space-y-4">
-                              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Authorized Signatory</p>
-                              <div className="h-16 w-32 border-b-2 border-dashed border-gray-300 mb-2"></div>
-                              <p className="text-[8px] font-bold text-gray-400 uppercase">For FAIZAN MACHINERY</p>
-                         </div>
-
-                         <div className="w-full md:w-80 space-y-4">
+                 <div className="p-8 sm:p-10 bg-gray-50 border-t border-gray-100 mt-auto">
+                     <div className="flex flex-col items-end gap-8">
+                         {/* Totals Section */}
+                         <div className="w-full sm:w-80 space-y-4">
                               <div className="space-y-3">
-                                 <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                 <div className="flex justify-between items-center text-xs font-medium text-gray-500">
                                      <span>Subtotal</span>
                                      <span className="text-gray-900">₹ {orderData.subtotal?.toLocaleString() || '0'}</span>
                                  </div>
                                  {orderData.additionalCharges > 0 && (
-                                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                    <div className="flex justify-between items-center text-xs font-medium text-gray-500">
                                         <span>Logistics</span>
                                         <span className="text-gray-900">+ ₹ {orderData.additionalCharges}</span>
                                     </div>
                                  )}
                                  {orderData.overallDiscount > 0 && (
-                                    <div className="flex justify-between items-center text-xs font-bold text-gray-500">
+                                    <div className="flex justify-between items-center text-xs font-medium text-gray-500">
                                         <span>Discount</span>
                                         <span className="text-rose-500">- ₹ {orderData.overallDiscount.toLocaleString()}</span>
                                     </div>
                                  )}
-                                 <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between items-center text-[10px] font-bold text-gray-400">
+                                 <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between items-center text-xs font-medium text-gray-500">
                                      <span>Round Off</span>
                                      <span>{orderData.roundOffDiff > 0 ? '+' : ''} ₹ {orderData.roundOffDiff || '0.00'}</span>
                                  </div>
                               </div>
                               
-                              <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                              <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
                                  <div className="flex justify-between items-center mb-1">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Indent</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total Indent</span>
                                  </div>
-                                 <div className="text-3xl font-black tracking-tight text-gray-900">
+                                 <div className="text-2xl font-bold tracking-tight text-gray-900">
                                     ₹ {orderData.totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                                  </div>
                               </div>
+                         </div>
+
+                         {/* Signature Section (Moved to Bottom) */}
+                         <div className="flex flex-col items-end space-y-2 mt-4 pt-4">
+                              <div className="h-16 w-40 border-b-2 border-dashed border-gray-300 mb-2"></div>
+                              <p className="text-[10px] font-bold text-gray-900 uppercase tracking-wider">Authorized Signatory</p>
+                              <p className="text-[8px] font-semibold text-gray-400 uppercase">For FAIZAN MACHINERY</p>
                          </div>
                      </div>
                  </div>

@@ -295,15 +295,15 @@ const Parties = () => {
               <input 
                 type="text" 
                 placeholder="Search party by name or phone..." 
-                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-medium text-sm"
+                className="w-full pl-12 pr-4 h-12 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-medium text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
           </div>
               <div className="flex gap-2">
-                  <div className="relative flex items-center">
+                  <div className="relative flex items-center h-12">
                       <select 
-                        className="appearance-none pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-bold text-xs uppercase tracking-widest text-gray-600"
+                        className="appearance-none pl-4 pr-10 h-full bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-black/10 focus:border-indigo-600 transition-all font-bold text-xs uppercase tracking-widest text-gray-600"
                         value={selectedCategory}
                         onChange={(e) => setSelectedCategory(e.target.value)}
                       >
@@ -316,14 +316,14 @@ const Parties = () => {
                   </div>
                   <button 
                     onClick={() => setShowCategoryModal(true)}
-                    className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
+                    className="h-12 w-12 flex items-center justify-center bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
                     title="Manage Categories"
                   >
                       <Tag size={20} />
                   </button>
                   <button 
                     onClick={handleDownload}
-                    className="p-3 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
+                    className="h-12 w-12 flex items-center justify-center bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-black transition-colors shadow-sm"
                     title="Export to Excel"
                   >
                       <Download size={20} />

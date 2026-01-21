@@ -27,31 +27,46 @@ const DashboardLayout = ({ children }) => {
     if (path === '/sales/delivery-challans') return 'Delivery Challans';
     if (path === '/sales/credit-notes') return 'Credit Notes';
     if (path === '/add-credit-note') return 'Create Credit Note';
-    if (path.startsWith('/edit-credit-note/')) return 'Edit Credit Note';
-    if (path.startsWith('/view-credit-note/')) return 'View Credit Note';
-    if (path === '/sales/sales-returns') return 'Sales Returns';
-    if (path.startsWith('/view-sales-return/')) return 'View Sales Return';
+    if (path.startsWith('/sales/credit-note/edit/')) return 'Edit Credit Note';
+    if (path.startsWith('/sales/credit-note/view/')) return 'View Credit Note';
+    if (path === '/sales/returns') return 'Sales Returns';
+    if (path === '/add-sales-return') return 'Create Sales Return';
+    if (path.startsWith('/sales/return/edit/')) return 'Edit Sales Return';
+    if (path.startsWith('/sales/return/view/')) return 'View Sales Return';
+    if (path === '/sales/payment-in') return 'Payment In';
+    if (path === '/sales/payment-in/add') return 'Add Payment';
+    if (path.startsWith('/sales/payment-in/edit/')) return 'Edit Payment';
+    if (path.startsWith('/sales/payment-in/view/')) return 'View Payment';
+    if (path === '/sales/proforma-invoices') return 'Proforma Invoices';
     
     // Purchase Routes
-    if (path === '/purchases/invoices') return 'Purchase Invoices';
-    if (path === '/add-purchase') return 'Create Purchase Invoice';
-    if (path.startsWith('/edit-purchase/')) return 'Edit Purchase';
-    if (path.startsWith('/view-purchase/')) return 'View Purchase';
-    if (path === '/purchases/purchase-orders') return 'Purchase Orders';
+    // Purchase Routes
+    if (path === '/purchases/invoices' || path === '/purchases') return 'Purchase Invoices';
+    if (path === '/add-purchase-invoice' || path === '/add-purchase') return 'Create Purchase Invoice';
+    if (path.startsWith('/purchases/edit/')) return 'Edit Purchase';
+    if (path.startsWith('/purchases/view/')) return 'View Purchase';
+    if (path === '/purchases/payment-out') return 'Payment Out';
+    if (path === '/add-payment-out') return 'Add Payment Out';
+    if (path.startsWith('/purchases/edit-payment-out/')) return 'Edit Payment Out';
+    if (path.startsWith('/purchases/view-payment-out/')) return 'View Payment Out';
+    if (path === '/purchases/orders') return 'Purchase Orders';
     if (path === '/add-purchase-order') return 'Create Purchase Order';
-    if (path.startsWith('/view-purchase-order/')) return 'View Purchase Order';
+    if (path.startsWith('/purchases/order/edit/')) return 'Edit Purchase Order';
+    if (path.startsWith('/purchases/order/view/')) return 'View Purchase Order';
     if (path === '/purchases/debit-notes') return 'Debit Notes';
     if (path === '/add-debit-note') return 'Create Debit Note';
-    if (path.startsWith('/edit-debit-note/')) return 'Edit Debit Note';
-    if (path.startsWith('/view-debit-note/')) return 'View Debit Note';
-    if (path === '/purchases/purchase-returns') return 'Purchase Returns';
-    if (path.startsWith('/view-purchase-return/')) return 'View Purchase Return';
+    if (path.startsWith('/purchases/debit-note/edit/')) return 'Edit Debit Note';
+    if (path.startsWith('/purchases/debit-note/view/')) return 'View Debit Note';
+    if (path === '/purchases/returns') return 'Purchase Returns';
+    if (path === '/add-purchase-return') return 'Create Purchase Return';
+    if (path.startsWith('/purchases/return/edit/')) return 'Edit Purchase Return';
+    if (path.startsWith('/purchases/return/view/')) return 'View Purchase Return';
     
     // Items/Inventory Routes
-    if (path === '/items') return 'Items & Inventory';
+    if (path === '/items' || path === '/items/inventory') return 'Items & Inventory';
     if (path === '/add-item') return 'Add New Item';
     if (path.startsWith('/edit-item/')) return 'Edit Item';
-    if (path === '/godowns') return 'Godown Management';
+    if (path === '/items/godown') return 'Godown Management';
     
     // Party Routes
     if (path === '/parties') return 'Party Management';
@@ -61,19 +76,39 @@ const DashboardLayout = ({ children }) => {
     
     // Cash & Bank Routes
     if (path === '/cash-bank') return 'Cash & Bank';
+    if (path === '/add-cash-bank') return 'Add New Account';
+    if (path.startsWith('/view-account/')) return 'View Account Details';
+    if (path.startsWith('/edit-account/')) return 'Edit Account';
     if (path === '/expenses') return 'Expenses';
+    if (path === '/add-expense') return 'Record Expense';
+    if (path.startsWith('/expenses/edit/')) return 'Edit Expense';
+    if (path.startsWith('/expenses/print/')) return 'Expense Voucher';
     
     // Branch Routes
     if (path === '/branches') return 'Branch Management';
-    if (path === '/add-branch') return 'Add New Branch';
-    if (path.startsWith('/edit-branch/')) return 'Edit Branch';
-    if (path.startsWith('/view-branch/')) return 'View Branch';
+    if (path === '/branches/create') return 'Add New Branch';
+    if (path.startsWith('/branches/edit/')) return 'Edit Branch';
+    if (path.startsWith('/branches/view/')) return 'View Branch';
     
     // Reports Routes
     if (path === '/reports') return 'Reports & Analytics';
-    if (path === '/reports/daybook') return 'Daybook Report';
-    if (path === '/reports/gst') return 'GST Reports';
-    if (path === '/reports/stock') return 'Stock Reports';
+    if (path === '/daybook') return 'Daybook';
+    if (path === '/reports/balance-sheet') return 'Balance Sheet';
+    if (path === '/reports/profit-loss') return 'Profit & Loss Report';
+    
+    // Generic Dynamic Reports handler
+    if (path.startsWith('/reports/')) {
+        const reportType = path.split('/reports/')[1];
+        // Handle GSTR specifically
+        if (reportType.toLowerCase().startsWith('gstr')) {
+             return reportType.toUpperCase() + ' Report';
+        }
+        // Format simple hypenated names (e.g. 'stock-summary' -> 'Stock Summary Report')
+        return reportType
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ') + ' Report';
+    }
     
     // Staff Routes
     if (path === '/staff-attendance') return 'Staff Attendance';

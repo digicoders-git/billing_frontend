@@ -131,7 +131,12 @@ const AddCashBank = () => {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!/\d/.test(val)) {
+                        setFormData({...formData, name: val});
+                      }
+                    }}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                     placeholder={`Enter ${formData.type.toLowerCase()} account name`}
                     required
@@ -234,7 +239,10 @@ const AddCashBank = () => {
                   <input
                     type="number"
                     value={formData.openingBalance}
-                    onChange={(e) => setFormData({...formData, openingBalance: parseFloat(e.target.value) || 0})}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({...formData, openingBalance: val === '' ? '' : parseFloat(val)});
+                    }}
                     className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm sm:text-base"
                     placeholder="0"
                   />

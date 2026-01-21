@@ -774,17 +774,17 @@ const AddPurchaseOrder = () => {
                                     <Settings size={16} className="text-indigo-500" />
                                     Order Status
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3">
                                     {['Pending', 'Approved', 'Cancelled', 'Delivered'].map((st) => (
                                         <button
                                             key={st}
                                             type="button"
                                             onClick={() => setFormData({...formData, status: st})}
                                             className={cn(
-                                                "px-4 py-2.5 rounded-lg text-xs font-bold border transition-all active:scale-95",
+                                                "px-4 py-3 rounded-xl text-xs font-black border transition-all duration-200 active:scale-95 flex items-center justify-center tracking-wide uppercase",
                                                 formData.status === st 
-                                                    ? "bg-gray-900 text-white border-gray-900" 
-                                                    : "bg-white text-gray-400 border-gray-200 hover:border-indigo-300"
+                                                    ? "bg-[#101828] text-white border-[#101828] shadow-lg shadow-gray-200" 
+                                                    : "bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50"
                                             )}
                                         >
                                             {st}

@@ -452,7 +452,8 @@ const AddDebitNote = () => {
                     </div>
                 </div>
                 
-                  <div className="overflow-x-auto min-w-0">
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto min-w-0">
                     <table className="w-full border-collapse min-w-[1400px]">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
@@ -554,6 +555,131 @@ const AddDebitNote = () => {
                       ))}
                     </tbody>
                   </table>
+                  </div>
+
+                  {/* Mobile View - Recreated Premium Segmented Cards */}
+                <div className="md:hidden space-y-6">
+                  {formData.items.map((item, index) => (
+                    <div key={item.id || item._id} className="bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500 fill-mode-backwards" style={{ animationDelay: `${index * 100}ms` }}>
+                        
+                        {/* Card Header */}
+                        <div className="bg-gray-50 border-b border-gray-100 px-5 py-3 flex justify-between items-center">
+                             <div className="flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-[10px] font-bold">{index + 1}</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Item Details</span>
+                             </div>
+                             {index > 0 && (
+                                <button onClick={() => removeItem(item.id || item._id)} className="w-8 h-8 flex items-center justify-center bg-white border border-gray-200 rounded-full text-red-500 shadow-sm active:scale-90 transition-all">
+                                    <Trash2 size={14} />
+                                </button>
+                             )}
+                        </div>
+                        
+                        <div className="p-5 space-y-5">
+                            {/* Block 1: Item Selection */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Product Description</label>
+                                <div 
+                                    className="bg-gray-50 rounded-xl border border-gray-200 p-4 flex items-center justify-between active:bg-gray-100 transition-colors"
+                                    onClick={() => {
+                                        setActiveItemIndex(index);
+                                        setShowItemPicker(true);
+                                    }}
+                                >
+                                    <span className={`text-sm font-bold truncate pr-4 ${item.name ? "text-gray-900 uppercase" : "text-gray-400 italic"}`}>
+                                        {item.name || 'Tap to search item...'}
+                                    </span>
+                                    <Search size={16} className="text-gray-400 shrink-0" />
+                                </div>
+                            </div>
+
+                            {/* Block 2: HSN & Quantity */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">HSN Code</label>
+                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-3">
+                                        <input 
+                                            type="text" 
+                                            className="w-full bg-transparent border-none p-0 text-sm font-bold text-gray-900 text-center uppercase placeholder:text-gray-300 focus:ring-0" 
+                                            placeholder="XXXX" 
+                                            value={item.hsn || ''} 
+                                            onChange={(e) => updateItem(item.id || item._id, 'hsn', e.target.value)} 
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest ml-1">Quantity</label>
+                                    <div className="bg-indigo-50/50 rounded-xl border border-indigo-100 p-3 flex items-center justify-center gap-1">
+                                        <input 
+                                            type="number" 
+                                            className="w-full bg-transparent border-none p-0 text-lg font-black text-indigo-700 text-center placeholder:text-indigo-200 focus:ring-0" 
+                                            placeholder="0" 
+                                            value={item.qty} 
+                                            onChange={(e) => updateItem(item.id || item._id, 'qty', parseFloat(e.target.value) || 0)} 
+                                        />
+                                        <span className="text-[9px] font-bold text-indigo-400 uppercase">{item.unit || 'PCS'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-dashed border-gray-200"></div>
+
+                            {/* Block 3: MRP & GST */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">MRP</label>
+                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 flex items-center justify-center gap-1">
+                                        <span className="text-gray-400 text-xs font-bold">₹</span>
+                                        <input 
+                                            type="number" 
+                                            className="w-full bg-transparent border-none p-0 text-sm font-bold text-gray-900 text-center placeholder:text-gray-300 focus:ring-0" 
+                                            placeholder="0" 
+                                            value={item.mrp || 0} 
+                                            onChange={(e) => updateItem(item.id || item._id, 'mrp', parseFloat(e.target.value) || 0)} 
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">GST Rate</label>
+                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-3 relative">
+                                        <select 
+                                            value={item.gstRate || 'None'} 
+                                            onChange={(e) => updateItem(item.id || item._id, 'gstRate', e.target.value)} 
+                                            className="w-full bg-transparent border-none p-0 text-xs font-bold text-gray-900 text-center appearance-none focus:ring-0"
+                                        >
+                                            {gstOptions.map(opt => (
+                                                <option key={opt} value={opt}>{opt}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Block 4: Rate (Price) */}
+                            <div className="space-y-2">
+                                <label className="text-[9px] font-bold text-gray-400 uppercase tracking-widest ml-1">Unit Rate (Price)</label>
+                                <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 flex items-center justify-center gap-1">
+                                    <span className="text-gray-400 text-sm font-bold">₹</span>
+                                    <input 
+                                        type="number" 
+                                        className="w-full bg-transparent border-none p-0 text-base font-bold text-gray-900 text-center placeholder:text-gray-300 focus:ring-0" 
+                                        placeholder="0" 
+                                        value={item.rate || 0} 
+                                        onChange={(e) => updateItem(item.id || item._id, 'rate', parseFloat(e.target.value) || 0)} 
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card Footer: Amount */}
+                        <div className="bg-gray-900 px-5 py-4 flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Row Total</span>
+                            <span className="text-xl font-black text-white tracking-tight">₹ {(item.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="p-4 border-t border-gray-100 bg-gray-50/30">

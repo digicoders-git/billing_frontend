@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'sans': ['Geologica', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        'sans': ['"Source Sans 3"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         'xs': ['0.65rem', { lineHeight: '0.9rem' }],

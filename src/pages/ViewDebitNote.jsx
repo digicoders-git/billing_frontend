@@ -79,53 +79,57 @@ const ViewDebitNote = () => {
       <DashboardLayout>
         <div className="min-h-screen bg-gray-50/50 pb-20">
           {/* Top Header */}
-          <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print">
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => navigate(-1)} 
-                className="group flex items-center justify-center w-10 h-10 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-gray-300 hover:shadow-md transition-all text-gray-500 hover:text-gray-800"
-              >
-                <ArrowLeft size={20} className="group-hover:-translate-x-0.5 transition-transform" />
-              </button>
-              <div>
-                <div className="flex items-center gap-3">
-                   <h1 className="text-2xl font-black text-gray-900 tracking-tight italic uppercase">View Debit Note</h1>
-                   <span className="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border bg-indigo-50 text-indigo-500 border-indigo-100 italic">
-                      Audit Entry
-                   </span>
+          <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6 no-print">
+            {/* Header Title Area - Matches Screenshot */}
+            <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                     <button 
+                        onClick={() => navigate(-1)} 
+                        className="w-12 h-12 flex items-center justify-center bg-white border border-gray-100 rounded-2xl shadow-sm text-gray-500 hover:text-black transition-all shadow-gray-200"
+                     >
+                        <ArrowLeft size={20} />
+                     </button>
+                     <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
+                             <h1 className="text-2xl font-black text-gray-900 leading-none italic uppercase">
+                                View Debit <br/> Note
+                             </h1>
+                             <span className="px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest italic whitespace-nowrap self-start">
+                                Audit Entry
+                             </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-400 mt-2 uppercase tracking-wider">
+                            Registry Ref: <span className="text-indigo-600 font-black">#{noteData.returnNo}</span>
+                        </p>
+                     </div>
                 </div>
-                <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-2">
-                    Registry Ref: <span className="text-indigo-600 font-black tracking-widest">#{noteData.returnNo}</span>
-                </p>
-              </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-gray-200 shadow-sm w-full sm:w-auto justify-end sm:justify-start">
-               <button 
-                onClick={() => navigate(`/purchases/debit-note/edit/${id}`)}
-                className="p-2 sm:px-4 sm:py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-all flex items-center gap-2 font-black uppercase text-[10px] tracking-widest group"
-                title="Edit"
-              >
-                <Edit size={16} className="text-gray-400 group-hover:text-gray-600" />
-                <span className="hidden sm:inline">Modify</span>
-              </button>
-              <div className="w-px h-4 bg-gray-200"></div>
-              <button 
-                onClick={handleDelete}
-                className="p-2 sm:px-4 sm:py-2 text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center gap-2 font-black uppercase text-[10px] tracking-widest group"
-                title="Delete"
-              >
-                <Trash2 size={16} className="text-red-400 group-hover:text-red-500" />
-                <span className="hidden sm:inline">Purge</span>
-              </button>
-              <div className="w-px h-4 bg-gray-200"></div>
-              <button 
-                onClick={() => handlePrint()} 
-                className="px-6 py-2.5 bg-gray-900 text-white rounded-lg text-[10px] font-black hover:bg-black transition-all uppercase tracking-[2px] shadow-lg hover:shadow-black/20 flex items-center gap-2 active:scale-95"
-              >
-                  <Printer size={16} /> 
-                  <span>Print Audit</span>
-              </button>
+            {/* Action Bar - Matches Screenshot */}
+            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-1 w-full">
+                   <button 
+                     onClick={() => navigate(`/purchases/debit-note/edit/${id}`)}
+                     className="flex-1 py-3 flex items-center justify-center text-gray-400 hover:text-black hover:bg-gray-50 rounded-xl transition-all"
+                   >
+                      <Edit size={18} />
+                   </button>
+                   <div className="w-px h-6 bg-gray-100" />
+                   <button 
+                     onClick={handleDelete}
+                     className="flex-1 py-3 flex items-center justify-center text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                   >
+                      <Trash2 size={18} />
+                   </button>
+                   <div className="w-px h-6 bg-gray-100" />
+                   <button 
+                     onClick={() => handlePrint()}
+                     className="flex-[2] flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-[2px] hover:bg-black transition-all shadow-md ml-2"
+                   >
+                      <Printer size={14} />
+                      <span>Print Audit</span>
+                   </button>
+                </div>
             </div>
           </div>
 

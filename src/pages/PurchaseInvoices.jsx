@@ -429,79 +429,89 @@ const PurchaseInvoices = () => {
                     </div>
 
                     {/* Mobile View */}
-                    <div className="md:hidden divide-y divide-gray-100">
+                    {/* Mobile View - Premium Cards */}
+                    <div className="md:hidden space-y-4">
                         {filteredInvoices.length === 0 ? (
-                            <div className="py-24 text-center opacity-[0.1] flex flex-col items-center gap-4">
-                                <ShoppingCart size={64} />
-                                <p className="text-xs font-black uppercase tracking-[3px]">Empty Purchase Registry</p>
+                            <div className="py-24 text-center opacity-[0.3] flex flex-col items-center gap-4">
+                                <ShoppingCart size={64} className="text-gray-300" />
+                                <p className="text-xs font-black uppercase tracking-[3px] text-gray-400">No Purchase Bills Found</p>
                             </div>
                         ) : (
                             filteredInvoices.map((invoice, idx) => (
-                                <div key={idx} className="p-5 space-y-4 hover:bg-gray-50 transition-colors">
+                                <div key={idx} className="bg-white rounded-[24px] p-5 shadow-sm border border-gray-100 flex flex-col gap-5 relative overflow-hidden">
+                                    
+                                    {/* Header: Icon, ID, Date, Status */}
                                     <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-sm border border-indigo-100/20">
-                                                <ShoppingCart size={20} />
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-[#F3F4F6] text-[#6366F1] rounded-2xl flex items-center justify-center shadow-sm border border-gray-100">
+                                                <ShoppingCart size={22} className="text-indigo-500" />
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-indigo-400 tracking-[2px] uppercase">{invoice.number}</span>
-                                                <span className="text-[9px] font-black text-gray-300 uppercase">{invoice.date}</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-xs font-black text-indigo-500 tracking-[1px] uppercase">{invoice.number}</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{invoice.date}</span>
                                             </div>
                                         </div>
                                         <span className={cn(
-                                            "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter border",
+                                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm",
                                             invoice.status === 'Paid' 
-                                                ? "bg-green-50 text-green-600 border-green-100 shadow-sm shadow-green-50/50" 
-                                                : "bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-50/50"
+                                                ? "bg-green-50 text-green-600 border border-green-100" 
+                                                : "bg-red-50 text-red-500 border border-red-100"
                                         )}>
                                             {invoice.status}
                                         </span>
                                     </div>
                                     
-                                    <div className="flex flex-col bg-gray-50/50 p-4 rounded-2xl border border-gray-50">
-                                        <span className="text-sm font-black text-gray-800 uppercase tracking-tight">{invoice.party}</span>
-                                        <div className="flex justify-between items-end mt-4 pt-4 border-t border-gray-200/50 border-dashed">
-                                            <div className="flex flex-col">
-                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Due Information</span>
+                                    {/* Content: Vendor & Amounts */}
+                                    <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-50 flex flex-col gap-4">
+                                        <div className="flex flex-col pb-4 border-b border-dashed border-gray-200">
+                                            <span className="text-sm font-black text-gray-900 uppercase tracking-tight">{invoice.party}</span>
+                                        </div>
+
+                                        <div className="flex justify-between items-end">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Due Information</span>
                                                 <span className={cn(
-                                                    "text-[10px] font-black uppercase tracking-tighter italic",
-                                                    invoice.dueIn.includes('Overdue') ? 'text-red-500' : 'text-indigo-400'
-                                                )}>{invoice.dueIn}</span>
+                                                    "text-xs font-black uppercase tracking-tight",
+                                                    invoice.unpaid > 0 ? 'text-red-500' : 'text-indigo-400'
+                                                )}>
+                                                    {invoice.unpaid > 0 ? `Due: ₹${invoice.unpaid.toLocaleString()}` : '-'}
+                                                </span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Total Bill</span>
-                                                <div className="text-xl font-black text-gray-900 tracking-tight">
-                                                    <span className="text-xs opacity-30 mr-1 italic">₹</span>
+                                            <div className="text-right flex flex-col gap-1">
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Bill</span>
+                                                <div className="text-xl font-black text-gray-900 tracking-tight leading-none">
+                                                    <span className="text-xs opacity-40 mr-1">₹</span>
                                                     {invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-4 gap-2 pt-1">
+                                    {/* Actions */}
+                                    <div className="grid grid-cols-4 gap-3">
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handlePrint(invoice.id); }}
-                                            className="py-2.5 flex items-center justify-center text-emerald-600 bg-emerald-50/50 border border-emerald-100 rounded-[14px] active:scale-95 transition-all"
+                                            className="h-11 flex items-center justify-center text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors active:scale-95"
                                         >
-                                            <Printer size={16} />
+                                            <Printer size={18} />
                                         </button>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); navigate(`/purchases/view/${invoice.id}`); }}
-                                            className="py-2.5 flex items-center justify-center text-indigo-600 bg-indigo-50/50 border border-indigo-100 rounded-[14px] active:scale-95 transition-all"
+                                            className="h-11 flex items-center justify-center text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition-colors active:scale-95"
                                         >
-                                            <Eye size={16} />
+                                            <Eye size={18} />
                                         </button>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); navigate(`/purchases/edit/${invoice.id}`); }}
-                                            className="py-2.5 flex items-center justify-center text-amber-600 bg-amber-50/50 border border-amber-100 rounded-[14px] active:scale-95 transition-all"
+                                            className="h-11 flex items-center justify-center text-amber-600 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors active:scale-95"
                                         >
-                                            <Edit size={16} />
+                                            <Edit size={18} />
                                         </button>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleDelete(invoice.id); }}
-                                            className="py-2.5 flex items-center justify-center text-rose-600 bg-rose-50/50 border border-rose-100 rounded-[14px] active:scale-95 transition-all"
+                                            className="h-11 flex items-center justify-center text-rose-600 bg-rose-50 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors active:scale-95"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash2 size={18} />
                                         </button>
                                     </div>
                                 </div>

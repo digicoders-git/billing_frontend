@@ -130,20 +130,51 @@ const PurchaseReturn = () => {
         <DashboardLayout>
             <div className="p-4 sm:p-8 space-y-8 bg-gray-50/30 min-h-screen">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase italic decoration-indigo-500/20 underline decoration-4 underline-offset-8">Purchase Return</h1>
-                            <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest">Audit Mode</span>
+                <div className="flex flex-col gap-6">
+                    {/* Mobile Header Design */}
+                    <div className="md:hidden flex flex-col gap-5">
+                        <div className="flex justify-between items-start">
+                            <div className="flex flex-col">
+                                <h1 className="text-3xl font-black text-gray-900 italic tracking-tighter leading-none">
+                                    <span className="block border-b-[6px] border-indigo-100 pb-1 mb-1 w-max">PURCHASE</span>
+                                    <span className="block border-b-[6px] border-indigo-100 pb-1 w-max">RETURN</span>
+                                </h1>
+                            </div>
+                            <div className="bg-[#EEF2FF] px-4 py-2.5 rounded-[18px] flex flex-col items-center justify-center border border-indigo-50">
+                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest leading-none mb-0.5">Audit</span>
+                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest leading-none">Mode</span>
+                            </div>
                         </div>
-                        <p className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] mt-4">Stock Outward Registry & Vendor Settlement Audit</p>
+                        
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] leading-relaxed">
+                            Stock Outward Registry & <br/> Vendor Settlement Audit
+                        </p>
+
+                        <button 
+                            onClick={() => navigate('/add-purchase-return')}
+                            className="w-full bg-[#0F172A] text-white py-4 rounded-[20px] flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl shadow-gray-200 active:scale-95 transition-all text-sm group"
+                        >
+                            <Plus size={20} className="text-white group-hover:scale-110 transition-transform" />
+                            <span className="font-black uppercase tracking-[2px]">Issue Purchase Return</span>
+                        </button>
                     </div>
-                    <button 
-                        className="w-full md:w-auto px-8 py-4 bg-gray-900 text-white rounded-[22px] text-[11px] font-black shadow-2xl shadow-gray-200 hover:bg-indigo-600 hover:-translate-y-1 transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 active:scale-95"
-                        onClick={() => navigate('/add-purchase-return')}
-                    >
-                        <Plus size={18} /> Issue Purchase Return
-                    </button>
+
+                    {/* Desktop Header Design */}
+                    <div className="hidden md:flex flex-row justify-between items-center gap-6">
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase italic decoration-indigo-500/20 underline decoration-4 underline-offset-8">Purchase Return</h1>
+                                <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full border border-indigo-100 uppercase tracking-widest">Audit Mode</span>
+                            </div>
+                            <p className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] mt-4">Stock Outward Registry & Vendor Settlement Audit</p>
+                        </div>
+                        <button 
+                            className="w-auto px-8 py-4 bg-gray-900 text-white rounded-[22px] text-[11px] font-black shadow-2xl shadow-gray-200 hover:bg-indigo-600 hover:-translate-y-1 transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 active:scale-95"
+                            onClick={() => navigate('/add-purchase-return')}
+                        >
+                            <Plus size={18} /> Issue Purchase Return
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats Grid */}
@@ -245,7 +276,8 @@ const PurchaseReturn = () => {
 
                 {/* Data Table */}
                 <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
-                    <div className="overflow-x-auto">
+                    {/* Desktop View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-[#FDFDFF] border-b border-gray-100/50">
                                 <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">
@@ -341,6 +373,89 @@ const PurchaseReturn = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile View - Card Layout */}
+                    <div className="md:hidden space-y-4 p-4">
+                        {loading ? (
+                             <div className="flex flex-col items-center gap-4 py-12">
+                                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                <p className="text-[10px] font-black uppercase tracking-[4px] text-gray-400">Loading...</p>
+                            </div>
+                        ) : filteredReturns.length === 0 ? (
+                            <div className="flex flex-col items-center gap-6 opacity-30 py-12">
+                                <RefreshCcw size={64} className="text-gray-400" />
+                                <p className="text-sm font-black uppercase tracking-[4px] text-gray-400">No Returns Found</p>
+                            </div>
+                        ) : (
+                            filteredReturns.map((ret, idx) => (
+                                <div key={ret.id} className="bg-white border border-gray-100 rounded-[24px] p-5 shadow-sm relative overflow-hidden group">
+                                     {/* Header */}
+                                     <div className="flex justify-between items-start mb-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center border border-red-100 shadow-sm">
+                                                <ArrowUpRight size={22} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">{ret.number}</h3>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase mt-0.5">{ret.date}</p>
+                                            </div>
+                                        </div>
+                                        <span className={cn(
+                                            "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border shadow-sm",
+                                            ret.status === 'Completed' 
+                                                ? "bg-indigo-50 text-indigo-600 border-indigo-100" 
+                                                : "bg-yellow-50 text-yellow-600 border-yellow-100"
+                                        )}>
+                                            {ret.status || 'Open'}
+                                        </span>
+                                     </div>
+
+                                     {/* Content */}
+                                     <div className="bg-[#F8FAFC] rounded-2xl p-4 border border-gray-50 mb-4 space-y-4">
+                                         <div>
+                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Party Name</span>
+                                             <p className="text-sm font-black text-gray-900 uppercase tracking-tight truncate">{ret.party}</p>
+                                         </div>
+                                         <div className="flex justify-between items-end pt-3 border-t border-dashed border-gray-200">
+                                             <div>
+                                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Reference</span>
+                                                 <p className="text-xs font-bold text-gray-600">{ret.purchaseNo}</p>
+                                             </div>
+                                             <div className="text-right">
+                                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-0.5">Return Amount</span>
+                                                 <p className="text-xl font-black text-gray-900 tracking-tight">
+                                                     <span className="text-xs text-gray-400 mr-1">₹</span>
+                                                     {ret.amount.toLocaleString()}
+                                                 </p>
+                                             </div>
+                                         </div>
+                                     </div>
+
+                                     {/* Actions */}
+                                     <div className="grid grid-cols-3 gap-3">
+                                        <button 
+                                            onClick={() => navigate(`/purchases/return/view/${ret.id}`)}
+                                            className="h-11 flex items-center justify-center gap-2 bg-white border border-indigo-100 rounded-xl text-indigo-600 shadow-sm hover:bg-indigo-50 transition-all active:scale-95"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
+                                        <button 
+                                            onClick={() => navigate(`/purchases/return/edit/${ret.id}`)}
+                                            className="h-11 flex items-center justify-center gap-2 bg-white border border-amber-100 rounded-xl text-amber-600 shadow-sm hover:bg-amber-50 transition-all active:scale-95"
+                                        >
+                                            <Edit3 size={18} />
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDelete(ret.id)}
+                                            className="h-11 flex items-center justify-center gap-2 bg-white border border-red-100 rounded-xl text-red-600 shadow-sm hover:bg-red-50 transition-all active:scale-95"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                     </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

@@ -87,7 +87,7 @@ const ViewQuotation = () => {
               </button>
               <div>
                 <div className="flex items-center gap-3">
-                   <h1 className="text-2xl font-black text-gray-900 tracking-tight">Viewing Quotation</h1>
+                   <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">View Quotation</h1>
                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest border ${
                       quotation.status === 'Converted' ? 'bg-purple-50 text-purple-600 border-purple-100' :
                       quotation.status === 'Expired' ? 'bg-red-50 text-red-500 border-red-100' :
@@ -96,8 +96,8 @@ const ViewQuotation = () => {
                       {quotation.status}
                    </span>
                 </div>
-                <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-2">
-                    Reference: <span className="text-gray-700 font-bold">{quotation.quotationNo}</span>
+                <p className="text-xs text-gray-500 font-medium mt-0.5 flex items-center gap-1 sm:gap-2">
+                    Ref: <span className="text-gray-700 font-bold">{quotation.quotationNo}</span>
                 </p>
               </div>
             </div>
@@ -136,9 +136,9 @@ const ViewQuotation = () => {
              <div ref={componentRef} className="bg-white shadow-lg rounded-xl overflow-hidden print:shadow-none print:rounded-none print:overflow-visible print:w-full">
                  
                  {/* Print Header */}
-                 <div className="p-6 sm:p-8 border-b border-gray-200 flex flex-col sm:flex-row justify-between gap-4">
+                 <div className="p-4 sm:p-8 border-b border-gray-200 flex flex-col sm:flex-row justify-between gap-4">
                     {/* Company Info Left */}
-                    <div className="w-[60%] flex gap-4">
+                    <div className="w-full sm:w-[60%] flex gap-4">
                         <div className="w-16 h-16 border-2 border-yellow-500 rounded-full flex items-center justify-center p-0.5 shrink-0">
                             <div className="w-full h-full bg-black rounded-full flex flex-col items-center justify-center text-white overflow-hidden p-0.5">
                                 <div className="text-[8px] font-black leading-none">FAIZAN</div>
@@ -184,28 +184,85 @@ const ViewQuotation = () => {
                  </div>
 
                  {/* Items Table */}
-                 <div className="border-t border-gray-100 overflow-x-auto">
+                 {/* Items List - Mobile Cards */}
+                 <div className="block sm:hidden border-t border-gray-100 divide-y divide-gray-50">
+                    {quotation.items.map((item, index) => (
+                        <div key={index} className="p-4 bg-white space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                            </div>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900">
+                                {item.name}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.hsn || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.mrp || '-'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600 min-h-[34px] flex items-center">
+                                        {item.qty} {item.unit || 'PCS'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Price</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.rate}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.gstRate || 'None'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                        {item.discount || 0}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    ))}
+                 </div>
+
+                 {/* Items Table - Desktop */}
+                 <div className="hidden sm:block border-t border-gray-100 overflow-x-auto">
                      <table className="w-full text-left min-w-[600px] sm:min-w-full">
                          <thead>
                              <tr className="bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                                 <th className="px-4 sm:px-8 py-4">#</th>
-                                 <th className="px-4 sm:px-8 py-4 w-1/2">Item Description</th>
-                                 <th className="px-4 sm:px-8 py-4 text-center">Qty</th>
-                                 <th className="px-4 sm:px-8 py-4 text-right">Price</th>
-                                 <th className="px-4 sm:px-8 py-4 text-right">Amount</th>
+                                 <th className="px-8 py-4">#</th>
+                                 <th className="px-8 py-4 w-1/2">Item Description</th>
+                                 <th className="px-8 py-4 text-center">Qty</th>
+                                 <th className="px-8 py-4 text-right">Price</th>
+                                 <th className="px-8 py-4 text-right">Amount</th>
                              </tr>
                          </thead>
                          <tbody className="divide-y divide-gray-50">
                              {quotation.items.map((item, index) => (
                                  <tr key={index}>
-                                     <td className="px-4 sm:px-8 py-4 text-xs font-bold text-gray-400">{index + 1}</td>
-                                     <td className="px-4 sm:px-8 py-4">
+                                     <td className="px-8 py-4 text-xs font-bold text-gray-400">{index + 1}</td>
+                                     <td className="px-8 py-4">
                                          <p className="text-sm font-bold text-gray-900">{item.name}</p>
                                          <p className="text-[10px] text-gray-400 mt-0.5">HSN: {item.hsn || 'N/A'}</p>
                                      </td>
-                                     <td className="px-4 sm:px-8 py-4 text-center text-sm font-medium text-gray-600">{item.qty} {item.unit}</td>
-                                     <td className="px-4 sm:px-8 py-4 text-right text-sm font-medium text-gray-600">₹ {item.rate}</td>
-                                     <td className="px-4 sm:px-8 py-4 text-right text-sm font-bold text-gray-900">₹ {item.amount}</td>
+                                     <td className="px-8 py-4 text-center text-sm font-medium text-gray-600">{item.qty} {item.unit}</td>
+                                     <td className="px-8 py-4 text-right text-sm font-medium text-gray-600">₹ {item.rate}</td>
+                                     <td className="px-8 py-4 text-right text-sm font-bold text-gray-900">₹ {item.amount}</td>
                                  </tr>
                              ))}
                          </tbody>

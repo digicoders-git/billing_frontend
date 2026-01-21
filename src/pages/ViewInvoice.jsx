@@ -270,30 +270,55 @@ const ViewInvoice = () => {
             {/* Mobile View */}
             <div className="md:hidden divide-y divide-gray-50">
               {invoice.items.map((item, index) => (
-                <div key={item._id || index} className="p-4 space-y-3">
-                  <div className="text-sm font-black text-gray-900 uppercase tracking-tight leading-tight">{item.name}</div>
-                  <div className="grid grid-cols-2 gap-y-2">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Qty / Unit</span>
-                      <span className="text-xs font-bold text-gray-700">{item.qty} {item.unit || 'PCS'}</span>
+                <div key={item._id || index} className="p-4 bg-white space-y-3">
+                   <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Rate</span>
-                      <span className="text-xs font-bold text-gray-700">₹{(item.rate || 0).toLocaleString('en-IN')}</span>
+                    <div className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900">
+                        {item.name}
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Tax / Disc</span>
-                      <span className="text-[10px] font-bold">
-                        <span className="text-blue-600">{item.discount || 0}% Disc</span>
-                        <span className="mx-1 text-gray-200">|</span>
-                        <span className="text-orange-600">{item.tax || 0}% GST</span>
-                      </span>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                {item.hsn || '-'}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                {item.mrp || '-'}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                             <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600 min-h-[34px] flex items-center">
+                                {item.qty} {item.unit || 'PCS'}
+                            </div>
+                        </div>
+                         <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Price</label>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                ₹{(item.rate || 0).toLocaleString('en-IN')}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                {item.gstRate || item.tax || 0}%
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium text-gray-700 min-h-[34px] flex items-center">
+                                {item.discount || 0}%
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
-                      <span className="text-sm font-black text-gray-900">₹{(item.amount || 0).toLocaleString('en-IN')}</span>
+                    <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                        <span className="text-base font-bold text-indigo-600">₹ {(item.amount || 0).toLocaleString('en-IN')}</span>
                     </div>
-                  </div>
                 </div>
               ))}
             </div>

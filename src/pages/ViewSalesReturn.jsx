@@ -183,7 +183,42 @@ const ViewSalesReturn = () => {
                  </div>
 
                  {/* Items Table */}
-                 <div className="border-t border-gray-100 overflow-x-auto">
+                 {/* Mobile View */}
+                 <div className="md:hidden divide-y divide-gray-50 border-t border-gray-100">
+                     {returnData.items.map((item, index) => (
+                         <div key={index} className="p-4 space-y-3">
+                             <div className="flex justify-between items-start gap-2">
+                                 <div className="text-sm font-black text-gray-900 uppercase tracking-tight leading-tight">{item.name}</div>
+                                 <div className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">#{index + 1}</div>
+                             </div>
+                             
+                             <div className="grid grid-cols-2 gap-y-2">
+                                 <div className="flex flex-col">
+                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Qty</span>
+                                     <span className="text-xs font-bold text-gray-700">{item.qty} {item.unit}</span>
+                                 </div>
+                                 <div className="flex flex-col items-end">
+                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Rate</span>
+                                     <span className="text-xs font-bold text-gray-700">₹{item.rate.toLocaleString()}</span>
+                                 </div>
+                                 {item.hsn && (
+                                     <div className="col-span-2">
+                                         <span className="text-[10px] font-bold text-gray-400 uppercase mr-2">HSN:</span>
+                                         <span className="text-[10px] font-bold text-gray-600">{item.hsn}</span>
+                                     </div>
+                                 )}
+                                 
+                                 <div className="col-span-2 pt-2 border-t border-gray-50 flex justify-between items-center mt-1">
+                                     <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                     <span className="text-sm font-black text-gray-900">₹{item.amount.toLocaleString()}</span>
+                                 </div>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+
+                 {/* Desktop View */}
+                 <div className="hidden md:block border-t border-gray-100 overflow-x-auto">
                      <table className="w-full text-left min-w-[600px] sm:min-w-full">
                          <thead>
                              <tr className="bg-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest">

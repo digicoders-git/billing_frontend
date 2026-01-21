@@ -277,20 +277,18 @@ const AddExpense = () => {
                         <h1 className="text-xl font-bold text-gray-900">{isEditMode ? 'Edit Expense' : 'Create Expense'}</h1>
                     </div>
                     
-                    <div className="flex items-center gap-3">
-                        <button className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 bg-white">
-                             <Settings size={20} />
-                        </button>
+                    <div className="flex items-center gap-2 sm:gap-3">
+
                         <button 
                             onClick={() => navigate('/expenses')}
-                            className="px-6 py-2 border border-gray-200 rounded-lg text-gray-600 font-semibold hover:bg-gray-50 bg-white"
+                            className="hidden sm:block px-6 py-2 border border-gray-200 rounded-lg text-gray-600 font-semibold hover:bg-gray-50 bg-white"
                         >
                             Cancel
                         </button>
                         <button 
                             onClick={handleSubmit}
                             disabled={loading}
-                            className="px-6 py-2 bg-[#4F46E5] text-white rounded-lg font-semibold shadow-sm hover:bg-[#4338CA] transition-all disabled:opacity-50"
+                            className="px-4 py-2 sm:px-6 bg-[#4F46E5] text-white rounded-lg font-semibold shadow-sm hover:bg-[#4338CA] transition-all disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
                         >
                             {loading ? 'Saving...' : 'Save'}
                         </button>
@@ -562,35 +560,43 @@ const AddExpense = () => {
                 <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
                     
                     {/* Items List */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {items.map((item, index) => (
-                            <div key={item.id} className="flex gap-4 items-center animate-in fade-in slide-in-from-top-2">
+                            <div key={item.id} className="bg-gray-50/50 rounded-xl p-3 sm:p-4 border border-gray-200 flex flex-col sm:flex-row gap-3 sm:items-center animate-in fade-in slide-in-from-top-2 relative group">
                                 <div className="flex-1">
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block pl-1 sm:hidden">Description</label>
                                     <input 
                                         type="text"
-                                        placeholder="Item Name / Description"
+                                        placeholder="What is this expense for?"
                                         value={item.name}
                                         onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 outline-none"
+                                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 font-medium focus:ring-2 focus:ring-indigo-100 outline-none placeholder:text-gray-400 placeholder:font-normal"
                                     />
                                 </div>
-                                <div className="w-48 relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">₹</div>
-                                    <input 
-                                        type="number"
-                                        placeholder="0.00"
-                                        value={item.amount}
-                                        onChange={(e) => handleItemChange(item.id, 'amount', e.target.value)}
-                                        className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 outline-none text-right font-mono"
-                                    />
+                                <div className="flex items-end gap-3">
+                                    <div className="w-full sm:w-48 relative">
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block pl-1 sm:hidden">Amount</label>
+                                        <div className="relative">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</div>
+                                            <input 
+                                                type="number"
+                                                placeholder="0.00"
+                                                value={item.amount}
+                                                onChange={(e) => handleItemChange(item.id, 'amount', e.target.value)}
+                                                className="w-full pl-8 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 outline-none text-right font-mono font-bold text-gray-900"
+                                            />
+                                        </div>
+                                    </div>
+                                    {items.length > 1 && (
+                                        <button 
+                                            onClick={() => removeItem(item.id)}
+                                            className="p-2.5 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100 rounded-lg transition-all sm:self-end self-end"
+                                            title="Remove Item"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
                                 </div>
-                                <button 
-                                    onClick={() => removeItem(item.id)}
-                                    className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Remove Item"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
                             </div>
                         ))}
                     </div>

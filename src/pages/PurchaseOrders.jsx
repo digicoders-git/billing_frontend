@@ -5,7 +5,7 @@ import {
     Search, ChevronDown, Settings, 
     Calendar, MoreVertical, 
     Plus, ShoppingCart, Filter,
-    Trash2, Edit, Eye, Download, Printer
+    Trash2, Edit, Eye, Download, Printer, CheckCircle2
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
@@ -18,6 +18,15 @@ const PurchaseOrders = () => {
     const [showDateMenu, setShowDateMenu] = useState(false);
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, dateRange]);
     
     const fetchOrders = async () => {
         try {
@@ -111,6 +120,8 @@ const PurchaseOrders = () => {
         return { totalAmount, pendingValue, deliveredCount, totalCount: orders.length };
     }, [orders]);
 
+    const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <DashboardLayout>
             <div className="p-4 sm:p-8 space-y-8 bg-gray-50/30 min-h-screen">
@@ -178,58 +189,58 @@ const PurchaseOrders = () => {
                 {/* Main Content Area */}
                 <div className="bg-white rounded-[32px] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden flex flex-col min-h-[600px]">
                     {/* Toolbar */}
-                    <div className="p-6 border-b border-gray-50 flex flex-col lg:flex-row justify-between items-center gap-6 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
-                        <div className="flex flex-col sm:flex-row flex-1 items-stretch sm:items-center gap-4 w-full">
-                            <div className="group relative flex-1">
-                                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-indigo-500 transition-colors">
-                                    <Search size={18} />
-                                </div>
-                                <input 
-                                    type="text"
-                                    placeholder="Search by PO# or Party Name..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-14 pr-6 py-4 bg-gray-50 border-none rounded-[22px] text-[11px] font-black outline-none transition-all focus:bg-white focus:ring-4 focus:ring-indigo-50 placeholder:text-gray-300 uppercase tracking-[1px]"
-                                />
+                    <div className="px-6 py-5 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4 sticky top-0 bg-white z-20">
+                        <div className="relative w-full sm:w-96">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <Search size={18} strokeWidth={2} />
                             </div>
+                            <input 
+                                type="text"
+                                placeholder="Search by PO# or Party..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 h-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 outline-none focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all placeholder:text-gray-400"
+                            />
+                        </div>
 
-                            <div className="relative">
-                                <button 
-                                    onClick={() => setShowDateMenu(!showDateMenu)}
-                                    className="w-full sm:w-[220px] flex items-center gap-3 px-8 py-4 bg-gray-50 border-none rounded-[22px] text-[10px] text-gray-600 font-black uppercase tracking-[2px] hover:bg-gray-100 transition-all shadow-sm active:scale-95"
-                                >
-                                    <Calendar size={18} className="text-indigo-400" />
+                        <div className="relative w-full sm:w-auto">
+                            <button 
+                                onClick={() => setShowDateMenu(!showDateMenu)}
+                                className="w-full sm:w-auto h-10 flex items-center justify-between gap-3 px-4 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all active:scale-95 shadow-sm min-w-[180px]"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Calendar size={16} className="text-gray-500" />
                                     <span>{dateRange}</span>
-                                    <ChevronDown size={14} className={cn("ml-auto text-gray-300 transition-transform", showDateMenu && "rotate-180")} />
-                                </button>
+                                </div>
+                                <ChevronDown size={14} className={cn("text-gray-400 transition-transform duration-200", showDateMenu && "rotate-180")} />
+                            </button>
 
-                                {showDateMenu && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setShowDateMenu(false)} />
-                                        <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-100 rounded-[28px] shadow-2xl z-50 py-4 animate-in fade-in zoom-in-95 duration-200">
-                                            <div className="px-6 py-2 border-b border-gray-50 mb-2">
-                                                <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">Filtering Registry</p>
-                                            </div>
-                                            {dateOptions.map((opt) => (
-                                                <button
-                                                    key={opt}
-                                                    onClick={() => {
-                                                        setDateRange(opt);
-                                                        setShowDateMenu(false);
-                                                    }}
-                                                    className={cn(
-                                                        "w-full text-left px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all relative flex items-center justify-between",
-                                                        dateRange === opt ? "text-indigo-600 bg-indigo-50/50" : "text-gray-400 hover:bg-gray-50 hover:text-indigo-400"
-                                                    )}
-                                                >
-                                                    {opt}
-                                                    {dateRange === opt && <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />}
-                                                </button>
-                                            ))}
+                            {showDateMenu && (
+                                <>
+                                    <div className="fixed inset-0 z-40" onClick={() => setShowDateMenu(false)} />
+                                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-xl z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="px-4 py-2 border-b border-gray-50 mb-1">
+                                            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filter Date</span>
                                         </div>
-                                    </>
-                                )}
-                            </div>
+                                        {dateOptions.map((opt) => (
+                                            <button
+                                                key={opt}
+                                                onClick={() => {
+                                                    setDateRange(opt);
+                                                    setShowDateMenu(false);
+                                                }}
+                                                className={cn(
+                                                    "w-full text-left px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-between",
+                                                    dateRange === opt ? "text-indigo-600 bg-indigo-50" : "text-gray-700 hover:bg-gray-50"
+                                                )}
+                                            >
+                                                {opt}
+                                                {dateRange === opt && <CheckCircle2 size={14} className="text-indigo-600" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -252,91 +263,94 @@ const PurchaseOrders = () => {
                             </div>
                         ) : (
                             <table className="w-full text-left border-collapse min-w-[1000px]">
-                                <thead className="bg-gray-50/50 text-[10px] font-black text-gray-400 uppercase tracking-widest sticky top-0 z-10">
-                                    <tr className="border-b border-gray-50">
-                                        <th className="px-8 py-5 text-left">Date</th>
-                                        <th className="px-6 py-5 text-left">Order #</th>
-                                        <th className="px-6 py-5 text-left">Party Name</th>
-                                        <th className="px-6 py-5 text-right w-40">Amount</th>
-                                        <th className="px-6 py-5 text-center w-32">Status</th>
-                                        <th className="px-8 py-5 text-right w-40">Actions</th>
+                                <thead className="bg-gray-50 border-b border-gray-100 sticky top-0 z-10">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Date</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Order #</th>
+                                        <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Party</th>
+                                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-40">Amount</th>
+                                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-36">Status</th>
+                                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-24"></th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-50/50 select-none">
-                                    {filteredOrders.map((order, idx) => (
+                                <tbody className="divide-y divide-gray-50">
+                                    {paginatedOrders.map((order, idx) => (
                                         <tr 
                                             key={idx} 
-                                            className="hover:bg-indigo-50/10 transition-colors group cursor-pointer border-b last:border-0"
+                                            className="hover:bg-gray-50/60 transition-colors cursor-pointer group"
                                             onClick={() => navigate(`/purchases/order/view/${order._id}`)}
                                         >
-                                            <td className="px-8 py-5">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-gray-700">
-                                                        {new Date(order.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                    </span>
-                                                </div>
+                                            <td className="px-6 py-4">
+                                                <span className="text-sm font-medium text-gray-600">
+                                                    {new Date(order.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
+                                                </span>
                                             </td>
-                                            <td className="px-6 py-5">
-                                                <span className="font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-lg text-xs tracking-wider uppercase">
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">
                                                     #{order.orderNo}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5">
+                                            <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center text-gray-500 font-black uppercase text-xs shadow-inner">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 uppercase">
                                                         {(order.partyName || (order.party?.name || 'NA'))[0]}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-gray-900 group-hover:text-indigo-600 transition-colors truncate max-w-[200px]">
+                                                        <span className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                                                             {order.partyName || (order.party?.name || 'Unknown')}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                                            {order.party?.mobile || 'No Contact'}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 text-right">
-                                                <span className="text-sm font-black text-gray-900">
+                                            <td className="px-6 py-4 text-right">
+                                                <span className="text-sm font-medium text-gray-900 tabular-nums">
                                                     ₹ {order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-5 text-center">
-                                                <span className={cn(
-                                                    "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border shadow-sm inline-block min-w-[80px]",
-                                                    order.status === 'Delivered' 
-                                                        ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
-                                                        : order.status === 'Approved'
-                                                        ? "bg-indigo-50 text-indigo-600 border-indigo-100"
-                                                        : order.status === 'Cancelled'
-                                                        ? "bg-rose-50 text-rose-600 border-rose-100"
-                                                        : "bg-amber-50 text-amber-600 border-amber-100"
-                                                )}>
-                                                    {order.status}
-                                                </span>
+                                            <td className="px-6 py-4">
+                                                <div className="flex justify-center">
+                                                    <div className={cn(
+                                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border",
+                                                        order.status === 'Delivered' 
+                                                            ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
+                                                            : order.status === 'Approved'
+                                                            ? "bg-indigo-50 text-indigo-700 border-indigo-100"
+                                                            : order.status === 'Cancelled'
+                                                            ? "bg-rose-50 text-rose-700 border-rose-100"
+                                                            : "bg-amber-50 text-amber-700 border-amber-100"
+                                                    )}>
+                                                        <div className={cn(
+                                                            "w-1.5 h-1.5 rounded-full",
+                                                            order.status === 'Delivered' ? "bg-emerald-500" :
+                                                            order.status === 'Approved' ? "bg-indigo-500" :
+                                                            order.status === 'Cancelled' ? "bg-rose-500" : "bg-amber-500"
+                                                        )} />
+                                                        {order.status}
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td className="px-8 py-5 text-right">
-                                                <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); navigate(`/purchases/order/view/${order._id}`); }}
-                                                        className="p-2 bg-white text-gray-400 hover:text-indigo-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all"
-                                                        title="View"
-                                                    >
-                                                        <Eye size={16} />
-                                                    </button>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/purchases/order/edit/${order._id}`); }}
-                                                        className="p-2 bg-white text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all"
+                                                        className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
                                                         title="Edit"
                                                     >
                                                         <Edit size={16} />
                                                     </button>
                                                     <button 
                                                         onClick={(e) => handleDelete(order._id, e)}
-                                                        className="p-2 bg-white text-gray-400 hover:text-rose-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all"
+                                                        className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
                                                         title="Delete"
                                                     >
                                                         <Trash2 size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); navigate(`/purchases/order/view/${order._id}`); }}
+                                                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                                                        title="View"
+                                                    >
+                                                        <Eye size={16} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -347,30 +361,49 @@ const PurchaseOrders = () => {
                         )}
                     </div>
                     
-                    {/* Bottom Status Bar */}
-                    <div className="p-4 bg-gray-900 border-t border-gray-800 text-white flex justify-between items-center no-print">
-                        <div className="flex items-center gap-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[10px] font-black uppercase tracking-[3px]">ACQUISITION REGISTER SYNCED</span>
-                            </div>
-                            <div className="h-4 w-px bg-gray-700 hidden sm:block" />
-                            <div className="hidden sm:flex items-center gap-2">
-                                <span className="text-[9px] font-black text-gray-500 uppercase">AUDIT ENTRIES:</span>
-                                <span className="text-[11px] font-black italic">{filteredOrders.length} records</span>
+                    {/* Pagination Footer */}
+                    {filteredOrders.length > 0 && (
+                        <div className="p-4 border-t border-gray-100 flex items-center justify-between bg-white">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredOrders.length)} of {filteredOrders.length}
+                            </span>
+                            
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronDown className="rotate-90" size={16} />
+                                </button>
+                                
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.ceil(filteredOrders.length / itemsPerPage) }).map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn(
+                                                "w-8 h-8 rounded-lg text-xs font-bold transition-all",
+                                                currentPage === i + 1
+                                                    ? "bg-gray-900 text-white shadow-lg shadow-gray-200"
+                                                    : "text-gray-500 hover:bg-gray-50"
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    )).slice(Math.max(0, currentPage - 3), Math.min(Math.ceil(filteredOrders.length / itemsPerPage), currentPage + 2))}
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredOrders.length / itemsPerPage)))}
+                                    disabled={currentPage === Math.ceil(filteredOrders.length / itemsPerPage)}
+                                    className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                >
+                                    <ChevronDown className="-rotate-90" size={16} />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <button className="text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors flex items-center gap-2 group">
-                                <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
-                                Export Ledger
-                            </button>
-                            <button className="text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-colors flex items-center gap-2 group">
-                                <Printer size={14} className="group-hover:-translate-y-0.5 transition-transform" />
-                                Print Registry
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

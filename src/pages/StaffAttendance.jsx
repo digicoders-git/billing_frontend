@@ -326,45 +326,68 @@ const StaffAttendance = () => {
                                 </table>
                             </div>
 
-                            {/* Mobile List View */}
-                            <div className="md:hidden divide-y divide-gray-100">
+                            {/* Mobile List View - Premium Cards */}
+                            <div className="md:hidden space-y-4 p-4 bg-gray-50/50">
                                 {staffList.map((staff) => (
-                                    <div key={staff._id} className="p-4 space-y-3">
-                                        <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-black text-gray-600 uppercase">
+                                    <div key={staff._id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4 relative overflow-hidden group">
+                                        
+                                        {/* Status Indicator Stripe */}
+                                        <div className={`absolute top-0 left-0 w-1.5 h-full ${
+                                            staff.attendance?.status === 'Present' ? 'bg-green-500' :
+                                            staff.attendance?.status === 'Absent' ? 'bg-red-500' :
+                                            staff.attendance?.status === 'Half Day' ? 'bg-orange-500' : 'bg-gray-200'
+                                        }`} />
+
+                                        {/* Header: Identity & Status */}
+                                        <div className="flex justify-between items-start pl-2">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-lg font-black text-gray-700 uppercase shadow-sm">
                                                     {staff.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <h3 className="text-sm font-bold text-gray-900">{staff.name}</h3>
-                                                    <p className="text-xs text-gray-500 font-medium">{staff.mobile}</p>
+                                                    <h3 className="text-base font-black text-gray-900 leading-tight">{staff.name}</h3>
+                                                    <p className="text-xs text-gray-500 font-bold tracking-wide mt-1">{staff.mobile}</p>
                                                 </div>
                                             </div>
+                                            
                                             {staff.attendance ? (
-                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase border ${getStatusColor(staff.attendance.status)}`}>
+                                                <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${getStatusColor(staff.attendance.status)} shadow-sm`}>
                                                     {staff.attendance.status}
                                                 </span>
                                             ) : (
-                                                <span className="px-2 py-1 rounded text-[10px] font-black uppercase bg-gray-100 text-gray-400 border border-gray-200">
+                                                <span className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-400 border border-gray-200">
                                                     Pending
                                                 </span>
                                             )}
                                         </div>
                                         
-                                        <div className="flex items-center justify-between pt-2">
-                                            <div className="text-xs font-medium text-gray-500">
-                                                <span className="font-bold text-gray-900">₹{staff.salary}</span> / {staff.salaryType}
+                                        {/* Divider */}
+                                        <div className="h-px bg-gray-100 pl-2"></div>
+
+                                        {/* Footer: Salary & Actions */}
+                                        <div className="flex items-end justify-between gap-4 pl-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Salary</span>
+                                                <div className="text-sm font-bold text-gray-900">
+                                                    ₹{staff.salary} <span className="text-xs text-gray-400 font-medium">/ {staff.salaryType === 'Monthly' ? 'Mo' : staff.salaryType === 'Weekly' ? 'Wk' : 'Day'}</span>
+                                                </div>
                                             </div>
+
                                             <div className="flex items-center gap-2">
                                                 <button 
                                                     onClick={() => openHistoryModal(staff)}
-                                                    className="p-2 bg-gray-50 text-gray-600 rounded-lg"
+                                                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-all border border-gray-200 shadow-sm active:scale-95"
+                                                    title="View History"
                                                 >
-                                                    <History size={16} />
+                                                    <History size={18} />
                                                 </button>
                                                 <button 
                                                     onClick={() => openAttendanceModal(staff)}
-                                                    className="px-4 py-2 bg-black text-white text-xs font-bold uppercase rounded-lg"
+                                                    className={`h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-wider shadow-md transition-all active:scale-95 ${
+                                                        staff.attendance 
+                                                        ? 'bg-white border border-gray-200 text-gray-900 hover:bg-gray-50' 
+                                                        : 'bg-black text-white hover:bg-gray-900 shadow-black/20'
+                                                    }`}
                                                 >
                                                     {staff.attendance ? 'Update' : 'Mark Attendance'}
                                                 </button>
@@ -400,7 +423,12 @@ const StaffAttendance = () => {
                                         type="text" 
                                         required
                                         value={staffForm.name}
-                                        onChange={(e) => setStaffForm(prev => ({ ...prev, name: e.target.value }))}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (!/\d/.test(val)) {
+                                                setStaffForm(prev => ({ ...prev, name: val }));
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black transition-all outline-none text-gray-800 font-medium placeholder:text-gray-400"
                                         placeholder="e.g. Rahul Sharma"
                                     />
@@ -414,7 +442,13 @@ const StaffAttendance = () => {
                                             type="tel" 
                                             required
                                             value={staffForm.mobile}
-                                            onChange={(e) => setStaffForm(prev => ({ ...prev, mobile: e.target.value }))}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                // Only allow digits
+                                                if (/^\d*$/.test(val)) {
+                                                    setStaffForm(prev => ({ ...prev, mobile: val }));
+                                                }
+                                            }}
                                             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black/5 focus:border-black transition-all outline-none text-gray-800 font-medium"
                                             placeholder="9876543210"
                                         />

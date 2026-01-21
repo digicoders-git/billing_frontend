@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+import { cn } from '../lib/utils';
 
 const gstOptions = [
     "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
@@ -301,35 +302,85 @@ const AddPurchaseReturn = () => {
       <div className="min-h-screen bg-gray-50/30 pb-24">
         {/* Header Section */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 mb-8">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={() => navigate(-1)} 
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">
-                            {isEdit ? 'Edit' : 'Create'} Purchase Return
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">Record goods return to supplier</p>
+            <div className="max-w-7xl mx-auto">
+                {/* Mobile Header View - Redesigned Premium */}
+                <div className="md:hidden flex flex-col relative py-6">
+                    {/* Back Button Floating */}
+                    <div className="absolute left-0 top-2 z-10">
+                         <button 
+                            onClick={() => navigate(-1)} 
+                            className="w-12 h-12 flex items-center justify-center bg-white border border-gray-100 rounded-full text-gray-400 hover:text-black shadow-lg shadow-gray-100 transition-all active:scale-90"
+                        >
+                            <ArrowLeft size={22} />
+                        </button>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center space-y-6 mt-4">
+                         <div className="relative">
+                             <h1 className="text-5xl font-black text-gray-900 leading-[0.85] tracking-tighter uppercase italic text-left">
+                                <span className="block pl-2">Draft</span>
+                                <span className="block text-indigo-600 decoration-4 underline underline-offset-4 decoration-indigo-100">Return</span>
+                                <span className="block pl-6">Entry</span>
+                             </h1>
+                             
+                             <div className="absolute top-1/2 -right-16 -translate-y-1/2 bg-[#EFF4FF] border border-[#DEE7FF] text-[#5D87FF] px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-sm rotate-[-5deg]">
+                                {isEdit ? 'Update Mode' : 'New Registry'}
+                             </div>
+                         </div>
+                         
+                         <div className="space-y-3">
+                             <div className="w-12 h-1.5 bg-gray-100 rounded-full mx-auto" />
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] leading-relaxed max-w-[200px] mx-auto">
+                                Inventory Acquisition <br/> & Return System
+                             </p>
+                         </div>
+
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="w-full py-5 bg-[#0F172A] text-white rounded-[2rem] font-black text-[11px] uppercase tracking-[3px] hover:bg-black transition-all shadow-2xl shadow-indigo-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 mt-4"
+                        >
+                            {loading ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Save size={18} className="text-gray-400" />
+                            )}
+                            <span>{isEdit ? 'Sync Changes' : 'Sync Entry'}</span>
+                        </button>
                     </div>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-6 py-2.5 bg-black text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <Save size={16} />
-                        )}
-                        <span>{isEdit ? 'Update Return' : 'Save Return'}</span>
-                    </button>
+
+                {/* Desktop Header View */}
+                <div className="hidden md:flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => navigate(-1)} 
+                            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">
+                                {isEdit ? 'Edit' : 'Create'} Purchase Return
+                            </h1>
+                            <p className="text-xs text-gray-500 mt-0.5">Record goods return to supplier</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-black text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                        >
+                            {loading ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Save size={16} />
+                            )}
+                            <span>{isEdit ? 'Update Return' : 'Save Return'}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -341,42 +392,49 @@ const AddPurchaseReturn = () => {
             <div className="col-span-12 lg:col-span-9 space-y-6">
               
               {/* Vendor Selection */}
-              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <div className="bg-white rounded-[32px] border border-gray-100 p-6 shadow-sm">
                 <div className="flex items-center gap-2 mb-6 text-gray-900 font-bold">
                     <Truck size={18} className="text-gray-400" />
-                    <span>Vendor Selection</span>
+                    <span className="text-sm uppercase tracking-widest">Vendor Selection</span>
                 </div>
 
                 {!formData.party ? (
                   <button 
                     onClick={() => setShowVendorDropdown(true)}
-                    className="w-full flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-gray-200 rounded-2xl hover:border-black hover:bg-gray-50 transition-all group"
+                    className="w-full flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-gray-200 rounded-[24px] hover:border-black hover:bg-gray-50 transition-all group"
                   >
-                     <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:text-black mb-4">
-                        <User size={24} />
+                     <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:text-black mb-4 transition-colors">
+                        <User size={28} />
                      </div>
-                     <span className="text-sm font-bold text-gray-900">Choose Vendor</span>
-                     <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest font-medium">Click to select supplier from directory</p>
+                     <span className="text-sm font-black text-gray-900 uppercase tracking-wide">Choose Vendor</span>
+                     <p className="text-[10px] text-gray-400 mt-2 uppercase tracking-widest font-bold">Tap to search supplier directory</p>
                   </button>
                 ) : (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                    <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-black rounded-xl flex items-center justify-center text-white">
-                            <Truck size={24} />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">{formData.party.name}</h2>
-                            <div className="flex items-center gap-4 mt-1">
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GST: {formData.party.gstin || 'N/A'}</span>
-                                <span className="bg-white px-2 py-0.5 rounded text-[9px] font-bold text-gray-500 border border-gray-100 uppercase tracking-widest">{formData.party.mobile || 'No Contact'}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={() => setFormData(prev => ({ ...prev, party: null }))}
-                        className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-gray-600 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all"
+                  <div className="flex flex-col gap-4">
+                      <div className="flex flex-col items-center text-center gap-4 py-4">
+                          <div className="w-20 h-20 bg-black rounded-3xl flex items-center justify-center text-white shadow-xl shadow-gray-200">
+                              <Truck size={36} />
+                          </div>
+                          <div className="flex flex-col gap-1.5 w-full">
+                              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight leading-none">{formData.party.name}</h2>
+                              <div className="flex flex-wrap items-center justify-center gap-3">
+                                  <div className="flex flex-col items-center">
+                                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">GSTIN</span>
+                                      <span className="text-[11px] font-bold text-gray-800 uppercase bg-gray-50 px-2 py-0.5 rounded">{formData.party.gstin || 'N/A'}</span>
+                                  </div>
+                                  <div className="w-px h-6 bg-gray-100"></div>
+                                  <div className="flex flex-col items-center">
+                                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Mobile</span>
+                                      <span className="text-[11px] font-bold text-gray-800 uppercase bg-gray-50 px-2 py-0.5 rounded">{formData.party.mobile || 'No Contact'}</span>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                      <button 
+                        onClick={() => setShowVendorDropdown(true)}
+                        className="w-full py-4 bg-white border border-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-[2px] text-gray-500 hover:bg-gray-50 hover:text-black transition-all shadow-sm"
                     >
-                        Change
+                        Change Vendor
                     </button>
                   </div>
                 )}
@@ -503,57 +561,97 @@ const AddPurchaseReturn = () => {
                   </table>
                 </div>
 
-                {/* Mobile View */}
-                <div className="md:hidden divide-y divide-gray-100">
+                {/* Mobile View - Clean & Minimalist Premium */}
+                <div className="md:hidden space-y-10 pl-1 pr-1">
                   {formData.items.map((item, index) => (
-                    <div key={item.id || item._id} className="p-4 bg-white space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
-                            <button onClick={() => removeItem(item.id || item._id)}><X size={16} className="text-gray-400 hover:text-red-500" /></button>
-                        </div>
-                        <div 
-                            className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 cursor-pointer hover:border-indigo-300 transition-all"
-                            onClick={() => {
-                                setActiveItemIndex(index);
-                                setShowItemPicker(true);
-                            }}
-                        >
-                            {item.name || 'Tap to select item...'}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
-                                <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="HSN" value={item.hsn} onChange={(e) => updateItem(item.id || item._id, 'hsn', e.target.value)} />
+                    <div key={item.id || item._id} className="relative border-b border-dashed border-gray-200 pb-8 last:border-0 animate-in fade-in slide-in-from-bottom-2">
+                        {/* Item Name (Big & Simple) */}
+                         <div className="flex items-start justify-between mb-6">
+                            <div 
+                                onClick={() => { setActiveItemIndex(index); setShowItemPicker(true); }}
+                                className="flex-1 cursor-pointer group"
+                            >
+                                <label className="text-[9px] font-black text-gray-300 uppercase tracking-[3px] block mb-2">
+                                    Item No. {String(index + 1).padStart(2, '0')}
+                                </label>
+                                <div className={cn("text-2xl font-black leading-none uppercase tracking-tight break-words pr-4", item.name ? "text-gray-900 group-active:text-indigo-600 transition-colors" : "text-gray-200 italic")}>
+                                    {item.name || 'Select Product...'}
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.mrp || ''} onChange={(e) => updateItem(item.id || item._id, 'mrp', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-bold text-indigo-600" placeholder="1" value={item.qty} onChange={(e) => updateItem(item.id || item._id, 'qty', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Price</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.rate} onChange={(e) => updateItem(item.id || item._id, 'rate', e.target.value)} />
-                            </div>
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
-                                <select value={item.gstRate} onChange={(e) => updateItem(item.id || item._id, 'gstRate', e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium">
-                                    {gstOptions.map(opt => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
+                            {index > 0 && (
+                                <button onClick={() => removeItem(item.id || item._id)} className="w-10 h-10 flex items-center justify-center bg-red-50 text-red-400 rounded-full hover:bg-red-500 hover:text-white transition-all active:scale-90">
+                                    <Trash2 size={16} />
+                                </button>
+                            )}
+                         </div>
+
+                         {/* Core Metrics - Big & Clean */}
+                         <div className="grid grid-cols-3 gap-8 mb-6">
+                             <div className="space-y-1 text-center">
+                                 <label className="text-[9px] font-black text-indigo-300 uppercase tracking-[2px] block">Qty</label>
+                                 <input 
+                                    type="number" 
+                                    value={item.qty} 
+                                    onChange={(e) => updateItem(item.id || item._id, 'qty', e.target.value)}
+                                    className="w-full text-3xl font-black text-center border-none p-0 focus:ring-0 text-indigo-600 placeholder:text-gray-100 bg-transparent tracking-tighter"
+                                    placeholder="0"
+                                 />
+                                 <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">{item.unit || 'PCS'}</span>
+                             </div>
+                             <div className="space-y-1 text-center relative after:absolute after:left-[-16px] after:top-1/2 after:-translate-y-1/2 after:h-8 after:w-px after:bg-gray-100 after:content-['']">
+                                 <label className="text-[9px] font-black text-gray-300 uppercase tracking-[2px] block">Rate</label>
+                                 <input 
+                                    type="number" 
+                                    value={item.rate} 
+                                    onChange={(e) => updateItem(item.id || item._id, 'rate', e.target.value)}
+                                    className="w-full text-xl font-bold text-center border-none p-0 focus:ring-0 text-gray-900 placeholder:text-gray-100 bg-transparent"
+                                    placeholder="0"
+                                 />
+                             </div>
+                             <div className="space-y-1 text-right relative after:absolute after:left-[-16px] after:top-1/2 after:-translate-y-1/2 after:h-8 after:w-px after:bg-gray-100 after:content-['']">
+                                 <label className="text-[9px] font-black text-gray-300 uppercase tracking-[2px] block">Total</label>
+                                 <div className="w-full text-xl font-black text-right text-gray-900 leading-normal tracking-tight">
+                                    <span className="text-gray-300 text-xs mr-1">₹</span>
+                                    {item.amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                 </div>
+                             </div>
+                         </div>
+
+                         {/* Secondary Details - Subtle Pills */}
+                         <div className="flex flex-wrap items-center gap-2">
+                             <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl min-w-[100px]">
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">MRP</span>
+                                <input 
+                                    type="number" 
+                                    value={item.mrp || ''} 
+                                    onChange={(e) => updateItem(item.id || item._id, 'mrp', e.target.value)}
+                                    className="w-16 bg-transparent border-none p-0 text-gray-900 focus:ring-0 font-bold text-xs text-right"
+                                    placeholder="0"
+                                />
+                             </div>
+                             
+                             <div className="flex-1 flex items-center justify-between bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl min-w-[120px]">
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">TAX</span>
+                                <select 
+                                    value={item.gstRate} 
+                                    onChange={(e) => updateItem(item.id || item._id, 'gstRate', e.target.value)} 
+                                    className="bg-transparent border-none p-0 text-indigo-600 focus:ring-0 font-bold text-[10px] w-24 text-right appearance-none"
+                                >
+                                    {gstOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
-                            </div>
-                            <div>
-                                <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
-                                <input type="number" className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium" placeholder="0" value={item.discount} onChange={(e) => updateItem(item.id || item._id, 'discount', e.target.value)} />
-                            </div>
-                        </div>
-                        <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
-                            <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString()}</span>
-                        </div>
+                             </div>
+
+                             <div className="w-[80px] flex items-center justify-between bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl">
+                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider">%</span>
+                                <input 
+                                    type="number" 
+                                    value={item.discount} 
+                                    onChange={(e) => updateItem(item.id || item._id, 'discount', e.target.value)}
+                                    className="w-full bg-transparent border-none p-0 text-gray-900 focus:ring-0 font-bold text-xs text-right"
+                                    placeholder="0"
+                                />
+                             </div>
+                         </div>
                     </div>
                   ))}
                 </div>

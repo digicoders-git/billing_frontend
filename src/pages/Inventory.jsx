@@ -32,6 +32,8 @@ const Inventory = () => {
   const [categoryName, setCategoryName] = useState('');
   const [editingCategory, setEditingCategory] = useState(null);
   const [showReportsDropdown, setShowReportsDropdown] = useState(false);
+  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState('');
   const [loading, setLoading] = useState(true);
 
   // Item Form State
@@ -497,7 +499,11 @@ const Inventory = () => {
                           {['Rate List', 'Stock Summary', 'Low Stock Summary'].map((report) => (
                               <button 
                                 key={report} 
-                                onClick={() => handleReportDownload(report)}
+                                onClick={() => {
+                                    setSelectedReportType(report);
+                                    setShowReportPreview(true);
+                                    setShowReportsDropdown(false);
+                                }}
                                 className="w-full text-left px-4 py-3 text-[10px] font-black text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 uppercase tracking-widest border-b border-gray-50 last:border-0"
                               >
                                 {report}
@@ -1199,6 +1205,113 @@ const Inventory = () => {
                     </div>
                 </div>
             </div>
+        </div>
+      )}
+      
+      {/* Report Preview Modal */}
+      {showReportPreview && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
+             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="px-6 py-5 flex justify-between items-center border-b border-gray-50 bg-gray-50/50">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-900">{selectedReportType}</h3>
+                        <p className="text-xs text-gray-500 font-medium mt-0.5">Previewing report data before download</p>
+                    </div>
+                    <button onClick={() => setShowReportPreview(false)} className="p-1 rounded-full hover:bg-gray-100 text-gray-400"><X size={20} /></button>
+                </div>
+                
+                <div className="p-0 overflow-auto flex-1 custom-scrollbar">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                {selectedReportType === 'Rate List' && (
+                                    <>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Item Name</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Code</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">MRP</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Selling Price</th>
+                                    </>
+                                )}
+                                {selectedReportType === 'Stock Summary' && (
+                                    <>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Item Name</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Stock</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Purchase Price</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Total Value</th>
+                                    </>
+                                )}
+                                {selectedReportType === 'Low Stock Summary' && (
+                                    <>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Item Name</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Current Stock</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Min Stock</th>
+                                        <th className="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Deficit</th>
+                                    </>
+                                )}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                            {items.filter(item => {
+                                if (selectedReportType === 'Low Stock Summary') return item.stock <= (item.minStock || 5);
+                                return true;
+                            }).map((item, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50/50">
+                                    {selectedReportType === 'Rate List' && (
+                                        <>
+                                            <td className="px-6 py-3 font-medium text-gray-900 text-sm">{item.name}</td>
+                                            <td className="px-6 py-3 text-xs text-gray-500 font-bold">{item.code || '-'}</td>
+                                            <td className="px-6 py-3 text-xs text-gray-500 font-bold">₹{item.mrp || 0}</td>
+                                            <td className="px-6 py-3 text-sm font-bold text-gray-900 text-right">₹{item.sellingPrice || 0}</td>
+                                        </>
+                                    )}
+                                    {selectedReportType === 'Stock Summary' && (
+                                        <>
+                                            <td className="px-6 py-3 font-medium text-gray-900 text-sm">{item.name}</td>
+                                            <td className="px-6 py-3 text-xs font-bold text-blue-600">{item.stock} {item.unit}</td>
+                                            <td className="px-6 py-3 text-xs text-gray-500 font-bold text-right">₹{item.purchasePrice || 0}</td>
+                                            <td className="px-6 py-3 text-sm font-bold text-gray-900 text-right">₹{((item.stock || 0) * (item.purchasePrice || 0)).toLocaleString()}</td>
+                                        </>
+                                    )}
+                                    {selectedReportType === 'Low Stock Summary' && (
+                                        <>
+                                            <td className="px-6 py-3 font-medium text-gray-900 text-sm">{item.name}</td>
+                                            <td className="px-6 py-3 text-xs font-bold text-red-600">{item.stock} {item.unit}</td>
+                                            <td className="px-6 py-3 text-xs text-gray-500 font-bold">{item.minStock || 5}</td>
+                                            <td className="px-6 py-3 text-sm font-bold text-red-600 text-right">{(item.minStock || 5) - item.stock}</td>
+                                        </>
+                                    )}
+                                </tr>
+                            ))}
+                             {items.filter(item => selectedReportType === 'Low Stock Summary' ? item.stock <=(item.minStock||5) : true).length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-400 text-sm italic">
+                                        No data found for this report.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                    <button 
+                        onClick={() => setShowReportPreview(false)}
+                        className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs uppercase tracking-widest hover:bg-white transition-all"
+                    >
+                        Close
+                    </button>
+                    <button 
+                        onClick={() => {
+                            handleReportDownload(selectedReportType);
+                            setShowReportPreview(false);
+                        }}
+                        className="px-6 py-2.5 rounded-xl bg-black text-white font-bold text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg flex items-center gap-2"
+                    >
+                        <Download size={16} />
+                        Download Excel
+                    </button>
+                </div>
+             </div>
         </div>
       )}
     </DashboardLayout>

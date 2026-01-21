@@ -509,6 +509,111 @@ const AddPurchaseInvoice = () => {
                 </div>
                 
                 <div className="flex-1 overflow-x-auto min-w-0">
+                  {/* Mobile View */}
+                  <div className="md:hidden space-y-3 p-4">
+                  {formData.items.map((item, index) => (
+                    <div key={item.id} className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                            <button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500 transition-colors"><X size={16} /></button>
+                        </div>
+                        
+                        <div 
+                           className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900"
+                           onClick={() => {
+                               setActiveItemIndex(index);
+                               setShowItemPicker(true);
+                           }}
+                        >
+                           {item.name || <span className="text-gray-400 italic font-medium">Tap to select item...</span>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                              <input 
+                                type="text" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all uppercase"
+                                placeholder="HSN" 
+                                value={item.hsn} 
+                                onChange={(e) => updateItem(item.id, 'hsn', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.mrp || ''} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'mrp', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-2">
+                                <input 
+                                    type="number" 
+                                    className="w-full bg-transparent border-none outline-none text-xs font-bold text-indigo-600"
+                                    placeholder="1" 
+                                    value={item.qty} 
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => updateItem(item.id, 'qty', e.target.value)} 
+                                />
+                                <span className="text-[8px] font-bold text-gray-400 uppercase">{item.unit || 'PCS'}</span>
+                              </div>
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Rate</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.rate} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'rate', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                              <select 
+                                value={item.gstRate} 
+                                onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)} 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all uppercase"
+                              >
+                                {gstOptions.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.discount} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'discount', e.target.value)} 
+                              />
+                           </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                            <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+                  ))}
+                   {formData.items.length === 0 && (
+                        <div className="text-center py-8">
+                            <p className="text-gray-400 text-xs font-medium">No items added</p>
+                            <button onClick={addItem} className="mt-2 text-indigo-600 text-xs font-bold uppercase tracking-wide">Tap to Add Item</button>
+                        </div>
+                   )}
+                </div>
+
                   {/* Desktop Table */}
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full border-collapse min-w-[1400px]">

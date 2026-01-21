@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');
 
 @theme {
   --color-sidebar: #1a1d29;
@@ -37,7 +37,7 @@
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
   
-  --font-family-sans: Geologica, ui-sans-serif, system-ui, sans-serif;
+  --font-family-sans: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   
   --radius-lg: 12px;
   --radius-md: 8px;

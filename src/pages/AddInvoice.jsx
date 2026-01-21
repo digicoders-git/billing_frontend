@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
-import { cn } from '../lib/utils';
+// import { cn } from '../lib/utils';
 
 const gstOptions = [
     "None", "Exempted", "GST @ 0%", "GST @ 0.1%", "GST @ 0.25%", "GST @ 1.5%",
@@ -396,7 +396,7 @@ const AddInvoice = () => {
             <button 
               onClick={handleSubmit}
               disabled={loading}
-              className="px-6 sm:px-8 py-2 bg-black text-white rounded-xl text-xs sm:text-sm font-bold hover:bg-gray-800 shadow-lg shadow-black/20 transition-all uppercase tracking-widest disabled:opacity-50"
+              className="px-4 sm:px-8 py-2 bg-black text-white rounded-xl text-[10px] sm:text-sm font-bold hover:bg-gray-800 shadow-lg shadow-black/20 transition-all uppercase tracking-widest disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save Invoice'}
             </button>
@@ -488,7 +488,7 @@ const AddInvoice = () => {
 
               {/* Items Section */}
               <div className="bg-white rounded-3xl shadow-sm border border-slate-200/60 overflow-hidden flex flex-col min-h-[400px]">
-                <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-slate-100 flex justify-between items-center bg-white">
                     <h3 className="font-bold text-xl text-slate-800">Items & Services</h3>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full border border-slate-200">
                         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
@@ -496,7 +496,114 @@ const AddInvoice = () => {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-x-auto">
+                <div className="flex-1 bg-gray-50/50">
+                {/* Mobile Item Cards */}
+                <div className="md:hidden space-y-3 p-4">
+                  {formData.items.map((item, index) => (
+                    <div key={item.id} className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">ITEM {index + 1}</span>
+                            <button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500 transition-colors"><X size={16} /></button>
+                        </div>
+                        
+                        <div 
+                           className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900"
+                           onClick={() => {
+                               setActiveItemIndex(index);
+                               setShowItemPicker(true);
+                           }}
+                        >
+                           {item.name || <span className="text-gray-400 italic font-medium">Tap to select item...</span>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">HSN</label>
+                              <input 
+                                type="text" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all uppercase"
+                                placeholder="HSN" 
+                                value={item.hsn} 
+                                onChange={(e) => updateItem(item.id, 'hsn', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">MRP</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.mrp || ''} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'mrp', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Qty</label>
+                              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg p-2">
+                                <input 
+                                    type="number" 
+                                    className="w-full bg-transparent border-none outline-none text-xs font-bold text-indigo-600"
+                                    placeholder="1" 
+                                    value={item.qty} 
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => updateItem(item.id, 'qty', e.target.value)} 
+                                />
+                                <span className="text-[8px] font-bold text-gray-400 uppercase">{item.unit || 'PCS'}</span>
+                              </div>
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Rate</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.rate} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'rate', e.target.value)} 
+                              />
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">GST</label>
+                              <select 
+                                value={item.gstRate} 
+                                onChange={(e) => updateItem(item.id, 'gstRate', e.target.value)} 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all uppercase"
+                              >
+                                {gstOptions.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                           </div>
+                           <div>
+                              <label className="text-[9px] font-bold text-gray-400 uppercase mb-1 block">Disc %</label>
+                              <input 
+                                type="number" 
+                                className="w-full bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs font-medium outline-none focus:border-indigo-500 transition-all"
+                                placeholder="0" 
+                                value={item.discount} 
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => updateItem(item.id, 'discount', e.target.value)} 
+                              />
+                           </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                            <span className="text-base font-bold text-indigo-600">₹ {item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        </div>
+                    </div>
+                  ))}
+                   {formData.items.length === 0 && (
+                        <div className="text-center py-8">
+                            <p className="text-gray-400 text-xs font-medium">No items added</p>
+                            <button onClick={addItem} className="mt-2 text-indigo-600 text-xs font-bold uppercase tracking-wide">Tap to Add Item</button>
+                        </div>
+                   )}
+               
+            
+                </div>
+
                 {/* Desktop Table */}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full border-collapse min-w-[1400px]">

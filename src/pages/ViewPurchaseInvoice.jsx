@@ -151,7 +151,42 @@ const ViewPurchaseInvoice = () => {
                         <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{invoice.items.length} Items</span>
                     </div>
 
-                    <div className="overflow-x-auto">
+                    {/* Mobile View */}
+                    <div className="md:hidden divide-y divide-gray-50">
+                        {invoice.items.map((item, idx) => (
+                            <div key={idx} className="p-4 space-y-3">
+                                <div className="flex justify-between items-start gap-2">
+                                    <div className="text-sm font-black text-gray-900 uppercase tracking-tight leading-tight">{item.name}</div>
+                                    <div className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded">#{idx + 1}</div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-y-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Qty</span>
+                                        <span className="text-xs font-bold text-gray-700">{item.qty} {item.unit}</span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Rate</span>
+                                        <span className="text-xs font-bold text-gray-700">₹{item.rate.toLocaleString()}</span>
+                                    </div>
+                                    {item.hsn && (
+                                        <div className="col-span-2">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase mr-2">HSN:</span>
+                                            <span className="text-[10px] font-bold text-gray-600">{item.hsn}</span>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="col-span-2 pt-2 border-t border-gray-50 flex justify-between items-center mt-1">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Amount</span>
+                                        <span className="text-sm font-black text-gray-900">₹{item.amount.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                         <table className="w-full text-left">
                             <thead className="bg-[#FDFDFF] border-b border-gray-50">
                                 <tr>
