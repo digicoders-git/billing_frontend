@@ -182,6 +182,72 @@ const AddParty = () => {
     }
   };
 
+  const fetchGstinDetails = async () => {
+    if (!formData.gstin || formData.gstin.length !== 15) {
+        Swal.fire({
+            title: 'Invalid GSTIN',
+            text: 'Please enter a valid 15-digit GSTIN number.',
+            icon: 'warning',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
+        return;
+    }
+
+    setLoading(true);
+    try {
+        const response = await api.get(`/parties/gstin/${formData.gstin}`);
+        if (response.data) {
+            const details = response.data;
+            setFormData(prev => ({
+                ...prev,
+                name: details.name || prev.name,
+                billingAddress: details.billingAddress || prev.billingAddress,
+                shippingAddress: details.billingAddress || prev.shippingAddress,
+                placeOfSupply: details.placeOfSupply || prev.placeOfSupply,
+                pan: details.pan || prev.pan
+            }));
+
+            if (details.success) {
+                Swal.fire({
+                    title: 'Details Fetched',
+                    text: 'Party details auto-filled successfully.',
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            } else {
+                 Swal.fire({
+                    title: 'Partially Fetched',
+                    text: details.message || 'Details could not be fully fetched.',
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching GSTIN details:', error);
+        Swal.fire({
+            title: 'Fetch Failed',
+            text: error.response?.data?.message || 'Failed to fetch GST details. You can enter them manually.',
+            icon: 'error',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const handleSaveAndNew = async () => {
       if (!formData.name) {
           Swal.fire('Error', 'Party Name is required', 'error');
@@ -319,14 +385,19 @@ const AddParty = () => {
                     <input 
                         type="text" 
                         value={formData.gstin}
-                        onChange={(e) => handleChange('gstin', e.target.value)}
+                        onChange={(e) => handleChange('gstin', e.target.value.toUpperCase())}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all placeholder-gray-400 uppercase"
                         placeholder="ex: 29XXXXX9438J"
                     />
                 </div>
                 <div className="lg:col-span-1 flex items-end">
-                    <button className="w-full py-2 bg-gray-200 text-gray-900 font-medium rounded-lg hover:bg-gray-300 transition-colors text-sm cursor-pointer opacity-70 hover:opacity-100">
-                        Get Details
+                    <button 
+                        type="button"
+                        onClick={fetchGstinDetails}
+                        disabled={loading}
+                        className="w-full py-2 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                        {loading ? 'Fetching...' : 'Get Details'}
                     </button>
                     {/* Note below standard input */}
                 </div>

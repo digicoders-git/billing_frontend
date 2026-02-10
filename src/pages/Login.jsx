@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, User, Lock } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, RefreshCw } from 'lucide-react';
 import api from '../lib/axios';
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -13,6 +14,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     
     try {
       const { username, password } = formData;
@@ -29,6 +31,8 @@ const Login = () => {
     } catch (error) {
       console.error('Login error:', error);
       alert(error.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -106,9 +110,17 @@ const Login = () => {
             {/* Login Button */}
             <button
               type="submit"
-              className="w-full bg-[#000000]  text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
+              disabled={isLoading}
+              className={`w-full bg-[#000000] text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 shadow-lg flex items-center justify-center gap-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-xl cursor-pointer'}`}
             >
-              Sign In
+              {isLoading ? (
+                <>
+                  <RefreshCw className="animate-spin" size={18} />
+                  Singing In...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 

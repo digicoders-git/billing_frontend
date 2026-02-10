@@ -135,12 +135,7 @@ const ViewPurchaseReturn = () => {
                     <div className="md:hidden p-6 flex flex-col items-start text-left gap-6">
                         {/* Company Identity */}
                         <div className="flex items-start gap-4">
-                            <div className="w-16 h-16 border-2 border-yellow-400 rounded-full flex items-center justify-center bg-black shrink-0 overflow-hidden">
-                                <div className="text-center text-white flex flex-col justify-center items-center h-full w-full">
-                                    <span className="text-[9px] font-black leading-none tracking-widest">FAIZAN</span>
-                                    <span className="text-[5px] uppercase tracking-wider opacity-80 mt-0.5">Aquaculture</span>
-                                </div>
-                            </div>
+                            <img src="/Logo.png" alt="Company Logo" className="w-20 h-20 object-contain shrink-0" />
                             <div className="flex flex-col">
                                 <h1 className="text-lg font-black text-black leading-tight mb-2 tracking-tight">FAIZAN MACHINERY & AQUA CULTURE</h1>
                                 <p className="text-[10px] uppercase font-bold text-gray-500 leading-relaxed max-w-[250px]">
@@ -192,12 +187,7 @@ const ViewPurchaseReturn = () => {
                     <div className="hidden md:flex p-6 sm:p-8 flex-col sm:flex-row justify-between gap-4">
                         {/* Company Info Left */}
                         <div className="w-[60%] flex gap-4">
-                            <div className="w-16 h-16 border-2 border-yellow-500 rounded-full flex items-center justify-center p-0.5 shrink-0">
-                                <div className="w-full h-full bg-black rounded-full flex flex-col items-center justify-center text-white overflow-hidden p-0.5">
-                                    <div className="text-[8px] font-black leading-none">FAIZAN</div>
-                                    <div className="text-[5px] opacity-70">AQUACULTURE</div>
-                                </div>
-                            </div>
+                            <img src="/Logo.png" alt="Company Logo" className="w-20 h-20 object-contain shrink-0" />
                             <div className="flex-1">
                                 <h1 className="text-lg font-black leading-tight mb-1 text-black">FAIZAN MACHINERY & AQUA CULTURE</h1>
                                 <p className="text-[9px] leading-tight mb-1 font-medium text-gray-600">BARHNI ROAD, ITWA BAZAR, SIDDHARTH NAGAR, UTTAR PRADESH, 272192</p>
