@@ -14,7 +14,7 @@ import useUserPermissions from '../hooks/useUserPermissions';
 
 const Parties = () => {
   const navigate = useNavigate();
-  const { canCreate, canEdit, canDelete, canView } = useUserPermissions();
+  const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Parties');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'collect', 'pay'

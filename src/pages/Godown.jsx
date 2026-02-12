@@ -9,8 +9,10 @@ import {
 import Pagination from '../components/shared/Pagination';
 import Swal from 'sweetalert2';
 import api from '../lib/axios';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const Godown = () => {
+  const { canCreate, canEdit, canDelete } = useUserPermissions('Godowns');
   const [selectedGodownId, setSelectedGodownId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -248,6 +250,7 @@ const Godown = () => {
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight uppercase">Godown Management</h1>
             <p className="text-xs sm:text-sm text-gray-500 font-bold">Coordinate stock across multiple locations</p>
           </div>
+          {canCreate && (
           <button 
               onClick={() => { 
                   setIsEditing(false); 
@@ -259,6 +262,7 @@ const Godown = () => {
               <Plus size={16} />
               New Godown
           </button>
+          )}
       </div>
 
       {/* Refined Stats & Selector Section */}
@@ -269,18 +273,22 @@ const Godown = () => {
                 <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Godown</span>
                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {canEdit && (
                         <button 
                             onClick={() => { setIsEditing(true); setFormData(selectedGodown); setShowModal(true); }} 
                             className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-50 rounded-lg transition-all"
                         >
                             <Pencil size={12} />
                         </button>
+                        )}
+                        {canDelete && (
                         <button 
                             onClick={() => handleDeleteGodown(selectedGodown.id)}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                         >
                             <Trash2 size={12} />
                         </button>
+                        )}
                     </div>
                 </div>
                 <div className="relative">

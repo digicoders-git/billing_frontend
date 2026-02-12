@@ -24,7 +24,7 @@ const gstOptions = [
 ];
 
 const Inventory = () => {
-    const { canCreate, canEdit, canDelete } = useUserPermissions('Items');
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Inventory');
   const [searchTerm, setSearchTerm] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showItemModal, setShowItemModal] = useState(false);
@@ -687,7 +687,7 @@ const Inventory = () => {
                           </td>
                           <td className="px-6 py-4">
                               <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-indigo-600 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Quick View"><Eye size={16} /></button>
+                                  {canView && <button onClick={() => handleViewItem(item)} className="p-2 text-gray-400 hover:text-indigo-600 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Quick View"><Eye size={16} /></button>}
                                   {canEdit && <button onClick={() => handleEditItem(item)} className="p-2 text-gray-400 hover:text-black bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Edit Item"><Pencil size={16} /></button>}
                                   {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2 text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Delete Item"><Trash2 size={16} /></button>}
                               </div>
@@ -767,7 +767,7 @@ const Inventory = () => {
                           </div>
                       </div>
                       <div className="flex items-center gap-2">
-                          <button onClick={() => handleViewItem(item)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Eye size={18} /></button>
+                          {canView && <button onClick={() => handleViewItem(item)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Eye size={18} /></button>}
                           {canEdit && <button onClick={() => handleEditItem(item)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Pencil size={18} /></button>}
                           {canDelete && <button onClick={() => handleDeleteItem(item._id)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 active:text-red-500"><Trash2 size={18} /></button>}
                       </div>

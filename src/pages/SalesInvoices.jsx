@@ -17,7 +17,7 @@ const SalesInvoices = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
-    const { canCreate, canEdit, canDelete } = useUserPermissions('Sales');
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Sales');
     
     // Read query param for initial filter
     const queryParams = new URLSearchParams(location.search);
@@ -343,9 +343,13 @@ const SalesInvoices = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {canView && (
+                                                    <>
                                                     <button onClick={() => navigate(`/view-invoice/${item.id}`)} className="p-2 text-gray-400 hover:text-indigo-600 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="View Details"><FileText size={16} /></button>
-                                                    {canEdit && <button onClick={() => navigate(`/edit-invoice/${item.id}`)} className="p-2 text-gray-400 hover:text-black bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Edit"><Pencil size={16} /></button>}
                                                     <button onClick={() => navigate(`/invoice-pdf/${item.id}`)} className="p-2 text-gray-400 hover:text-green-600 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Print"><Printer size={16} /></button>
+                                                    </>
+                                                    )}
+                                                    {canEdit && <button onClick={() => navigate(`/edit-invoice/${item.id}`)} className="p-2 text-gray-400 hover:text-black bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Edit"><Pencil size={16} /></button>}
                                                     {canDelete && <button onClick={() => handleDeleteInvoice(item.id)} className="p-2 text-gray-400 hover:text-red-500 bg-white border border-gray-100 shadow-sm rounded-lg transition-all" title="Delete"><Trash2 size={16} /></button>}
                                                 </div>
                                             </td>
@@ -426,9 +430,13 @@ const SalesInvoices = () => {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
+                                        {canView && (
+                                        <>
                                         <button onClick={() => navigate(`/view-invoice/${item.id}`)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><FileText size={18} /></button>
-                                        {canEdit && <button onClick={() => navigate(`/edit-invoice/${item.id}`)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Pencil size={18} /></button>}
                                         <button onClick={() => navigate(`/invoice-pdf/${item.id}`)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Printer size={18} /></button>
+                                        </>
+                                        )}
+                                        {canEdit && <button onClick={() => navigate(`/edit-invoice/${item.id}`)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 transition-all"><Pencil size={18} /></button>}
                                         {canDelete && <button onClick={() => handleDeleteInvoice(item.id)} className="p-2.5 text-gray-400 bg-white border border-gray-100 shadow-sm rounded-xl active:scale-95 active:text-red-500 transition-all"><Trash2 size={18} /></button>}
                                     </div>
                                 </div>

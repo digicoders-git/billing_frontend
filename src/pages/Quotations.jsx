@@ -8,9 +8,11 @@ import {
 } from 'lucide-react';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const Quotations = () => {
     const navigate = useNavigate();
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Quotations');
     const [searchTerm, setSearchTerm] = useState('');
     const [dateRange, setDateRange] = useState('365'); // '7', '30', '365', 'all'
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'Open', 'Expired', 'Converted'
@@ -161,12 +163,14 @@ const Quotations = () => {
                             </div>
                         </div>
                     </div>
+                    {canCreate && (
                     <button 
                         className="w-full lg:w-auto px-6 py-2.5 bg-[#000000] text-white rounded-lg text-sm font-black shadow-lg shadow-black/20 hover:bg-gray-800 transition-all whitespace-nowrap uppercase tracking-wider"
                         onClick={() => navigate('/add-quotation')}
                     >
                         Create Quotation
                     </button>
+                    )}
                 </div>
 
                 {/* Table Section */}
@@ -210,6 +214,7 @@ const Quotations = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-100 transition-opacity">
+                                                {canView && (
                                                 <button 
                                                     onClick={() => navigate(`/view-quotation/${item.id}`)}
                                                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -217,6 +222,8 @@ const Quotations = () => {
                                                 >
                                                     <Eye size={18} />
                                                 </button>
+                                                )}
+                                                {canEdit && (
                                                 <button 
                                                     onClick={() => navigate(`/edit-quotation/${item.id}`)}
                                                     className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
@@ -224,6 +231,8 @@ const Quotations = () => {
                                                 >
                                                     <Edit size={18} />
                                                 </button>
+                                                )}
+                                                {canDelete && (
                                                 <button 
                                                     onClick={(e) => handleDelete(item.id, e)}
                                                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -231,6 +240,7 @@ const Quotations = () => {
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

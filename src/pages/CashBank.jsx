@@ -9,8 +9,10 @@ import {
 import Pagination from '../components/shared/Pagination';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const CashBank = () => {
+  const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Cash & Bank');
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -204,20 +206,24 @@ const CashBank = () => {
             <p className="text-sm text-gray-500">Real-time assets and branch collections</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-              <button 
-                onClick={() => setShowAdjustModal(true)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm font-bold text-xs uppercase tracking-widest"
-              >
-                  <ArrowRightLeft size={14} />
-                  Adjust
-              </button>
-              <button 
-                onClick={() => navigate('/add-cash-bank')}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#000000] text-white rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-[#b4933d] transition-all font-bold text-xs uppercase tracking-widest"
-              >
-                  <Plus size={14} />
-                  Add Account
-              </button>
+              {canEdit && (
+                  <button 
+                    onClick={() => setShowAdjustModal(true)}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-white border border-gray-200 rounded-xl hover:border-indigo-600 hover:text-indigo-600 transition-all shadow-sm font-bold text-xs uppercase tracking-widest"
+                  >
+                      <ArrowRightLeft size={14} />
+                      Adjust
+                  </button>
+              )}
+              {canCreate && (
+                  <button 
+                    onClick={() => navigate('/add-cash-bank')}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-[#000000] text-white rounded-xl shadow-lg shadow-indigo-600/20 hover:bg-[#b4933d] transition-all font-bold text-xs uppercase tracking-widest"
+                  >
+                      <Plus size={14} />
+                      Add Account
+                  </button>
+              )}
           </div>
       </div>
 
@@ -325,27 +331,33 @@ const CashBank = () => {
                                   </td>
                                   <td className="px-6 py-4 text-center">
                                       <div className="flex items-center justify-center gap-2 opacity-100 transition-opacity">
-                                          <button 
-                                            onClick={() => navigate(`/view-account/${acc._id}`)}
-                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                            title="View Details"
-                                          >
-                                              <Eye size={16} />
-                                          </button>
-                                          <button 
-                                            onClick={() => navigate(`/edit-account/${acc._id}`)}
-                                            className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                            title="Edit Account"
-                                          >
-                                              <Edit size={16} />
-                                          </button>
-                                          <button 
-                                            onClick={() => handleDeleteAccount(acc._id)}
-                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Delete Account"
-                                          >
-                                              <Trash2 size={16} />
-                                          </button>
+                                          {canView && (
+                                              <button 
+                                                onClick={() => navigate(`/view-account/${acc._id}`)}
+                                                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                title="View Details"
+                                              >
+                                                  <Eye size={16} />
+                                              </button>
+                                          )}
+                                          {canEdit && (
+                                              <button 
+                                                onClick={() => navigate(`/edit-account/${acc._id}`)}
+                                                className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                title="Edit Account"
+                                              >
+                                                  <Edit size={16} />
+                                              </button>
+                                          )}
+                                          {canDelete && (
+                                              <button 
+                                                onClick={() => handleDeleteAccount(acc._id)}
+                                                className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Account"
+                                              >
+                                                  <Trash2 size={16} />
+                                              </button>
+                                          )}
                                       </div>
                                   </td>
                               </tr>

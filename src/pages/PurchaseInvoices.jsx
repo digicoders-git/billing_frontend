@@ -11,12 +11,14 @@ import {
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 import PurchaseInvoicePrint from '../components/invoices/PurchaseInvoicePrint';
 
 const PurchaseInvoices = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Purchase Invoices');
 
     // Read query param for initial filter
     const queryParams = new URLSearchParams(location.search);
@@ -303,12 +305,14 @@ const PurchaseInvoices = () => {
                             )}
                         </div>
                     </div>
+                    {canCreate && (
                     <button 
                         className="w-full lg:w-auto px-8 py-3.5 bg-gray-900 text-white rounded-[18px] text-[11px] font-black shadow-xl shadow-gray-200 hover:bg-indigo-600 transition-all hover:-translate-y-0.5 active:translate-y-0 uppercase tracking-[2px] flex items-center justify-center gap-3"
                         onClick={() => navigate('/add-purchase-invoice')}
                     >
                         <Plus size={18} /> Record Purchase Bill
                     </button>
+                    )}
                 </div>
 
                 {/* Data Table */}
@@ -358,7 +362,7 @@ const PurchaseInvoices = () => {
                                             </td>
                                             <td className="px-6 py-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-100 shadow-sm">
+                                                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-100 to-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black border border-indigo-100 shadow-sm">
                                                         {invoice.party.substring(0,2).toUpperCase()}
                                                     </div>
                                                     <div className="flex flex-col">
@@ -391,6 +395,8 @@ const PurchaseInvoices = () => {
                                             </td>
                                             <td className="px-6 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                                                    {canView && (
+                                                    <>
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handlePrint(invoice.id); }}
                                                         className="p-2 bg-white text-emerald-600 border border-emerald-100 rounded-xl hover:bg-emerald-500 hover:text-white hover:shadow-md hover:shadow-emerald-200 transition-all"
@@ -405,6 +411,9 @@ const PurchaseInvoices = () => {
                                                     >
                                                         <Eye size={16} />
                                                     </button>
+                                                    </>
+                                                    )}
+                                                    {canEdit && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/purchases/edit/${invoice.id}`); }}
                                                         className="p-2 bg-white text-amber-600 border border-amber-100 rounded-xl hover:bg-amber-500 hover:text-white hover:shadow-md hover:shadow-amber-200 transition-all"
@@ -412,6 +421,8 @@ const PurchaseInvoices = () => {
                                                     >
                                                         <Edit size={16} />
                                                     </button>
+                                                    )}
+                                                    {canDelete && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleDelete(invoice.id); }}
                                                         className="p-2 bg-white text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-500 hover:text-white hover:shadow-md hover:shadow-rose-200 transition-all"
@@ -419,6 +430,7 @@ const PurchaseInvoices = () => {
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -489,6 +501,8 @@ const PurchaseInvoices = () => {
 
                                     {/* Actions */}
                                     <div className="grid grid-cols-4 gap-3">
+                                        {canView && (
+                                        <>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handlePrint(invoice.id); }}
                                             className="h-11 flex items-center justify-center text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors active:scale-95"
@@ -501,18 +515,24 @@ const PurchaseInvoices = () => {
                                         >
                                             <Eye size={18} />
                                         </button>
+                                        </>
+                                        )}
+                                        {canEdit && (
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); navigate(`/purchases/edit/${invoice.id}`); }}
                                             className="h-11 flex items-center justify-center text-amber-600 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors active:scale-95"
                                         >
                                             <Edit size={18} />
                                         </button>
+                                        )}
+                                        {canDelete && (
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleDelete(invoice.id); }}
                                             className="h-11 flex items-center justify-center text-rose-600 bg-rose-50 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors active:scale-95"
                                         >
                                             <Trash2 size={18} />
                                         </button>
+                                        )}
                                     </div>
                                 </div>
                             ))

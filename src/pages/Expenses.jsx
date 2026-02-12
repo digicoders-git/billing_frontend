@@ -10,10 +10,12 @@ import {
 import { cn } from '../lib/utils';
 import api from '../lib/axios';
 import Swal from 'sweetalert2';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const Expenses = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Expenses');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('All Expenses Categories');
@@ -265,12 +267,14 @@ const Expenses = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {canCreate && (
                         <button 
                             onClick={() => navigate('/add-expense')}
                             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 bg-[#000000] text-white rounded-lg text-sm font-black shadow-lg shadow-blue-200 hover:bg-[#4338CA] transition-all whitespace-nowrap uppercase tracking-wider"
                         >
                             <Plus size={18} /> <span className="sm:inline">Create Expense</span>
                         </button>
+                        )}
                     </div>
                 </div>
 
@@ -364,6 +368,7 @@ const Expenses = () => {
                                             </td>
                                             <td className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200">
+                                                    {canView && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/expenses/print/${item._id}`); }}
                                                         className="p-2 bg-white text-gray-400 hover:text-indigo-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
@@ -371,6 +376,8 @@ const Expenses = () => {
                                                     >
                                                         <Printer size={16} />
                                                     </button>
+                                                    )}
+                                                    {canEdit && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); navigate(`/expenses/edit/${item._id}`); }}
                                                         className="p-2 bg-white text-gray-400 hover:text-blue-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
@@ -378,6 +385,8 @@ const Expenses = () => {
                                                     >
                                                         <Edit2 size={16} />
                                                     </button>
+                                                    )}
+                                                    {canDelete && (
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
                                                         className="p-2 bg-white text-gray-400 hover:text-rose-600 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-all shadow-sm"
@@ -385,6 +394,7 @@ const Expenses = () => {
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

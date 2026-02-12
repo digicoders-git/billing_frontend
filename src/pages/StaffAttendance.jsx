@@ -8,6 +8,7 @@ import api from '../lib/axios';
 import Swal from 'sweetalert2';
 
 const StaffAttendance = () => {
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Staff Attendance & Payroll');
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
     const [showAttendanceModal, setShowAttendanceModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -208,12 +209,14 @@ const StaffAttendance = () => {
                             {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
+                    {canCreate && (
                     <button 
                         onClick={() => setShowAddStaffModal(true)}
                         className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg shadow-gray-200 hover:bg-gray-800 transition-all uppercase tracking-wider"
                     >
                         <Plus size={18} /> Add Staff
                     </button>
+                    )}
                 </div>
 
                 {/* Stats Grid */}
@@ -298,12 +301,15 @@ const StaffAttendance = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center gap-2">
+                                                        {canEdit && (
                                                         <button 
                                                             onClick={() => openAttendanceModal(staff)}
                                                             className="px-3 py-1.5 bg-black text-white text-[10px] font-bold uppercase tracking-wider rounded hover:bg-gray-800 transition-colors"
                                                         >
                                                             {staff.attendance ? 'Update' : 'Mark'}
                                                         </button>
+                                                        )}
+                                                        {canView && (
                                                         <button 
                                                             onClick={() => openHistoryModal(staff)}
                                                             className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors"
@@ -311,6 +317,8 @@ const StaffAttendance = () => {
                                                         >
                                                             <History size={16} />
                                                         </button>
+                                                        )}
+                                                        {canDelete && (
                                                         <button 
                                                             onClick={() => handleDelete(staff._id, staff.name)}
                                                             className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
@@ -318,6 +326,7 @@ const StaffAttendance = () => {
                                                         >
                                                             <Trash2 size={16} />
                                                         </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -374,6 +383,7 @@ const StaffAttendance = () => {
                                             </div>
 
                                             <div className="flex items-center gap-2">
+                                                {canView && (
                                                 <button 
                                                     onClick={() => openHistoryModal(staff)}
                                                     className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-indigo-600 transition-all border border-gray-200 shadow-sm active:scale-95"
@@ -381,6 +391,8 @@ const StaffAttendance = () => {
                                                 >
                                                     <History size={18} />
                                                 </button>
+                                                )}
+                                                {canEdit && (
                                                 <button 
                                                     onClick={() => openAttendanceModal(staff)}
                                                     className={`h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-wider shadow-md transition-all active:scale-95 ${
@@ -391,6 +403,7 @@ const StaffAttendance = () => {
                                                 >
                                                     {staff.attendance ? 'Update' : 'Mark Attendance'}
                                                 </button>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

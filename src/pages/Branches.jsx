@@ -10,8 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import api from '../lib/axios';
 import { cn } from '../lib/utils';
+import useUserPermissions from '../hooks/useUserPermissions';
 
 const Branches = () => {
+    const { canCreate, canEdit, canDelete, canView } = useUserPermissions('Branch Management');
     const [branches, setBranches] = useState([]);
     const [statistics, setStatistics] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -136,12 +138,14 @@ const Branches = () => {
                         </div>
                         <p className="text-[11px] font-black text-gray-400 uppercase tracking-[4px] mt-4">Manage Enterprise Locations & Access</p>
                     </div>
-                    <button 
-                        onClick={() => navigate('/branches/create')}
-                        className="w-full md:w-auto px-8 py-4 bg-gray-900 text-white rounded-[22px] text-[11px] font-black shadow-2xl shadow-gray-200 hover:bg-indigo-600 hover:-translate-y-1 transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 active:scale-95"
-                    >
-                        <Plus size={18} /> Add New Branch
-                    </button>
+                    {canCreate && (
+                        <button 
+                            onClick={() => navigate('/branches/create')}
+                            className="w-full md:w-auto px-8 py-4 bg-gray-900 text-white rounded-[22px] text-[11px] font-black shadow-2xl shadow-gray-200 hover:bg-indigo-600 hover:-translate-y-1 transition-all uppercase tracking-[2px] flex items-center justify-center gap-3 active:scale-95"
+                        >
+                            <Plus size={18} /> Add New Branch
+                        </button>
+                    )}
                 </div>
 
                 {/* Statistics Cards */}
@@ -312,37 +316,45 @@ const Branches = () => {
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <div className="flex items-center justify-end gap-2 opacity-100 transition-all translate-x-0">
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); navigate(`/branches/view/${branch._id}`); }}
-                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100 rounded-[12px] shadow-sm transition-all active:scale-90"
-                                                        title="View Details"
-                                                    >
-                                                        <Eye size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); navigate(`/branches/edit/${branch._id}`); }}
-                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-100 rounded-[12px] shadow-sm transition-all active:scale-90"
-                                                        title="Edit Configuration"
-                                                    >
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleToggleStatus(branch._id, branch.isActive, branch.name); }}
-                                                        className={cn(
-                                                            "p-2.5 bg-white border border-gray-100 rounded-[12px] shadow-sm transition-all active:scale-90",
-                                                            branch.isActive ? "text-amber-500 hover:text-amber-600 hover:border-amber-100" : "text-emerald-500 hover:text-emerald-600 hover:border-emerald-100"
-                                                        )}
-                                                        title={branch.isActive ? "Deactivate Branch" : "Activate Branch"}
-                                                    >
-                                                        <Power size={16} />
-                                                    </button>
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleDelete(branch._id, branch.name); }}
-                                                        className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-rose-600 hover:border-rose-100 rounded-[12px] shadow-sm transition-all active:scale-90"
-                                                        title="Delete Branch"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {canView && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); navigate(`/branches/view/${branch._id}`); }}
+                                                            className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                            title="View Details"
+                                                        >
+                                                            <Eye size={16} />
+                                                        </button>
+                                                    )}
+                                                    {canEdit && (
+                                                        <>
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); navigate(`/branches/edit/${branch._id}`); }}
+                                                                className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-blue-600 hover:border-blue-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                                title="Edit Configuration"
+                                                            >
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); handleToggleStatus(branch._id, branch.isActive, branch.name); }}
+                                                                className={cn(
+                                                                    "p-2.5 bg-white border border-gray-100 rounded-[12px] shadow-sm transition-all active:scale-90",
+                                                                    branch.isActive ? "text-amber-500 hover:text-amber-600 hover:border-amber-100" : "text-emerald-500 hover:text-emerald-600 hover:border-emerald-100"
+                                                                )}
+                                                                title={branch.isActive ? "Deactivate Branch" : "Activate Branch"}
+                                                            >
+                                                                <Power size={16} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleDelete(branch._id, branch.name); }}
+                                                            className="p-2.5 bg-white border border-gray-100 text-gray-400 hover:text-rose-600 hover:border-rose-100 rounded-[12px] shadow-sm transition-all active:scale-90"
+                                                            title="Delete Branch"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
